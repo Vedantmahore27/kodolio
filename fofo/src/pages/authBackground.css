@@ -1,0 +1,233 @@
+/* Auth Background Styles from Day2/login.css */
+:root {
+  --primary-green: #00ff88;
+  --primary-cyan: #00ffff;
+  --primary-blue: #0088ff;
+  --dark-bg: #0a0e27;
+  --darker-bg: #050810;
+  --grid-color: rgba(0, 255, 136, 0.1);
+  --text-primary: #ffffff;
+  --text-secondary: #00ffaa;
+}
+
+.auth-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--dark-bg) 0%, #0f1629 50%, var(--darker-bg) 100%);
+  overflow: hidden;
+  z-index: 0;
+}
+
+/* Background Gradient Overlay */
+.bg-gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(
+    ellipse at 20% 50%,
+    rgba(0, 136, 255, 0.1) 0%,
+    transparent 50%
+  ),
+  radial-gradient(
+    ellipse at 80% 50%,
+    rgba(0, 255, 136, 0.08) 0%,
+    transparent 50%
+  );
+  pointer-events: none;
+}
+
+/* Circuit Board SVG */
+.circuit-board-svg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+  z-index: 1;
+}
+
+.circuit-line {
+  stroke-dasharray: 500;
+  stroke-dashoffset: 500;
+  animation: drawLine 8s ease-in-out infinite;
+}
+
+.circuit-line:nth-child(3) {
+  animation-delay: 1s;
+}
+
+.circuit-line:nth-child(6) {
+  animation-delay: 2s;
+}
+
+.circuit-node {
+  animation: nodeGlow 2s ease-in-out infinite;
+}
+
+.circuit-node:nth-child(4) {
+  animation-delay: 0.5s;
+}
+
+.circuit-node:nth-child(7) {
+  animation-delay: 1.5s;
+}
+
+@keyframes drawLine {
+  0%, 100% { stroke-dashoffset: 500; }
+  50% { stroke-dashoffset: 0; }
+}
+
+@keyframes nodeGlow {
+  0%, 100% { 
+    r: 4;
+    opacity: 0.6;
+    filter: drop-shadow(0 0 2px currentColor);
+  }
+  50% { 
+    r: 8;
+    opacity: 0.9;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+}
+
+/* Code Blocks */
+.code-block {
+  position: absolute;
+  background: rgba(10, 14, 39, 0.6);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.1);
+  z-index: 2;
+  animation: codeFloat 6s ease-in-out infinite;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.code-block-1 {
+  top: 10%;
+  left: 5%;
+  animation-delay: 0s;
+  border-color: rgba(0, 255, 136, 0.3);
+}
+
+.code-block-2 {
+  bottom: 15%;
+  right: 5%;
+  animation-delay: 2s;
+  border-color: rgba(0, 136, 255, 0.3);
+}
+
+.code-line {
+  display: block;
+  opacity: 0;
+  animation: typeIn 2s ease-out forwards;
+}
+
+.code-block-1 .code-line {
+  animation-delay: 0s;
+}
+
+.code-block-2 .code-line {
+  animation-delay: 2s;
+}
+
+.code-block-2 .code-line:nth-child(2) {
+  animation-delay: 2.3s;
+}
+
+.code-block-2 .code-line:nth-child(3) {
+  animation-delay: 2.6s;
+}
+
+.keyword {
+  color: var(--primary-cyan);
+  font-weight: bold;
+}
+
+.variable {
+  color: var(--primary-green);
+}
+
+.function {
+  color: var(--primary-blue);
+}
+
+.class-name {
+  color: #ff88ff;
+}
+
+@keyframes typeIn {
+  0% { opacity: 0; }
+  80% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes codeFloat {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* Floating Cursor Elements */
+.floating-cursor {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-green);
+  border-radius: 3px;
+  z-index: 2;
+  opacity: 0.5;
+  animation: cursorFloat 8s ease-in-out infinite;
+}
+
+.cursor-1 {
+  top: 20%;
+  left: 10%;
+  animation-delay: 0s;
+  border-color: var(--primary-green);
+}
+
+.cursor-2 {
+  top: 70%;
+  right: 15%;
+  animation-delay: 3s;
+  border-color: var(--primary-cyan);
+}
+
+.cursor-3 {
+  bottom: 25%;
+  right: 8%;
+  animation-delay: 6s;
+  border-color: var(--primary-blue);
+}
+
+@keyframes cursorFloat {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(30px, -30px) rotate(45deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+/* Auth Container - Keep form in foreground */
+.auth-container {
+  position: relative;
+  z-index: 10;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+/* Kodolio Title Glow */
+.kodolio-title {
+  color: var(--primary-green);
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.6), 0 0 20px rgba(0, 255, 136, 0.3);
+  font-weight: bold;
+}

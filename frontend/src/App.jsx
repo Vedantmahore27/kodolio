@@ -9,7 +9,7 @@ import { useDispatch , useSelector } from "react-redux";
 import Admin from "./pages/Admin.jsx";
 import CreateProblem from "./component/CreateProblem.jsx";
 import AdminDelete from "./component/AdminDelete.jsx";
-
+import Problempage from "./pages/Problempage.jsx"
 
 import {useEffect} from "react"
 function App(){
@@ -37,9 +37,10 @@ function App(){
     <Route path="/Problems" element={isAuthenticated?<ProblemPage></ProblemPage>:<Navigate to="/signup"/>}></Route>   
     <Route path="/login" element={<Login></Login>}></Route> 
     <Route path="/signup" element={<Signup></Signup>}></Route> 
-    <Route path="/admin" element={<Admin></Admin>}> </Route>Admin
-    <Route path="/admin/create" element={<CreateProblem></CreateProblem>}> </Route>Admin
-    <Route path="/admin/delete" element={<AdminDelete></AdminDelete>}> </Route>Admin
+    <Route path="/admin" element={<Admin></Admin>}> </Route>
+    <Route path="/admin/create" element={<CreateProblem></CreateProblem>}> </Route>
+    <Route path="/admin/delete" element={<AdminDelete></AdminDelete>}> </Route>
+    <Route path="/problem/:problemId" element={<Problempage></Problempage>}></Route>
     {/* <Route path="/admin/upload/" element={<AdminUpload></AdminUpload>}> </Route>Admin
     <Route path="/admin/" element={<Admin></Admin>}> </Route>Admin */}
     </Routes>

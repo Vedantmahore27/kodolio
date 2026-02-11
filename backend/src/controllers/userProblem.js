@@ -25,7 +25,7 @@ const User = require("../models/user")
 };
 
 
-  const createProblem = async (req,res)=>{
+const createProblem = async (req,res)=>{
    console.log("request received");
   // API request to authenticate user:
     const {title,description,difficulty,tags,
@@ -93,9 +93,6 @@ const User = require("../models/user")
         console.log(err);
     }
 } 
-
-  
-
 
 const updateProblem = async (req,res)=>{
     
@@ -169,7 +166,6 @@ const updateProblem = async (req,res)=>{
   }
 }
 
-
 const deleteProblem = async(req,res)=>{
   const id = req.params.id;
   try{
@@ -195,7 +191,7 @@ const getProblemById= async(req,res)=>{
    try{
        const id = req.params.id;
        if(!id) res.status(400).send("Id is missing");
-       console.log("problem api called")
+   
        const dsaProblem = await problem.findById(id).select('_id title description difficulty tags visibleTestCases startCode referenceSolution');
        //select all  fields except :   -hiddenTestCase
        if(!dsaProblem){

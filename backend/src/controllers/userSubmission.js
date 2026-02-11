@@ -6,7 +6,7 @@ const User = require("../models/user");
 
 const submitCode = async (req, res) => {
   try {
-    
+    console.log("submit called")
     const userId = req.user._id;
     const problemId = req.params.id;
     const { code, language } = req.body;
@@ -99,7 +99,7 @@ const submitCode = async (req, res) => {
 
 const runCode = async (req, res) => {
   try {
-    
+     
     const userId = req.user._id;
     const problemId = req.params.id;
     const { code, language } = req.body;
@@ -191,4 +191,10 @@ const runCode = async (req, res) => {
   }
 }
 
-module.exports = {submitCode, runCode};
+// const mysubmission = async(res,req)=>{
+         
+//      const userId=req.body._id;
+//      const problemId =
+// }
+
+module.exports = {submitCode, runCode };

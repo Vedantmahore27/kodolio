@@ -5,12 +5,254 @@ import { useParams } from 'react-router-dom';
 import axiosClient from "../utils/axiosClient";
 import Editorial from '../component/Editorial';
 
-// Temporary placeholder to prevent runtime errors when the submissions tab is used.
-const SubmissionHistory = ({ problemId }) => (
-  <div className="text-gray-400 text-sm p-4">
-    Submission history will be available soon. (problemId: {problemId})
-  </div>
-);
+const SubmissionHistory = ({ problemId, onSelectSubmission, selectedSubmissionId }) => {
+  const [submissions, setSubmissions] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchSubmissions();
+  }, [problemId]);
+
+  const fetchSubmissions = async () => {
+    setLoading(true);
+    try {
+      const response = await axiosClient.get(`/submission/submissions/${problemId}`);
+      setSubmissions(response.data || []);
+    } catch (error) {
+      console.error('Error fetching submissions:', error);
+      setSubmissions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'accepted':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      case 'wrong':
+        return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'error':
+        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+      case 'pending':
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+      default:
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const handleViewCode = (submission) => {
+    setSelectedSubmission(submission);
+    setShowDetails(true);
+  };
+
+  const handleCloseDetails = () => {
+    setShowDetails(false);
+    setTimeout(() => setSelectedSubmission(null), 300);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="relative">
+          <div className="w-8 h-8 border-2 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <div className="text-center py-12 px-4">
+        <div className="text-gray-400 text-sm mb-4">
+          <svg className="w-12 h-12 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          No submissions yet. Submit your code to see the history here!
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {submissions.map((submission) => (
+        <div
+          key={submission._id}
+          className={`bg-gradient-to-r from-[#0f0f23] to-[#1a1a2e] border rounded-lg p-4 hover:border-purple-500/50 transition-all cursor-pointer ${
+            selectedSubmissionId === submission._id ? 'border-purple-500 bg-purple-500/5' : 'border-gray-700'
+          }`}
+          onClick={() => onSelectSubmission(submission)}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <span className={`px-2.5 py-1 rounded text-xs font-semibold border ${getStatusColor(submission.status)}`}>
+                  {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+                </span>
+                <span className="text-xs text-gray-500">{submission.language}</span>
+              </div>
+              <div className="text-sm text-gray-400">
+                {submission.status === 'accepted' ? (
+                  <span className="text-emerald-400">
+                    ✓ {submission.testCasesPassed}/{submission.testCasesTotal} test cases passed
+                  </span>
+                ) : (
+                  <span>
+                    {submission.testCasesPassed}/{submission.testCasesTotal} test cases passed
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-xs text-gray-500 mb-1">{formatDate(submission.createdAt)}</div>
+              {submission.runtime > 0 && (
+                <div className="text-xs text-gray-600">
+                  {submission.runtime.toFixed(2)}ms / {submission.memory}MB
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const SubmissionDetails = ({ submission }) => {
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'accepted':
+        return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+      case 'wrong':
+        return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'error':
+        return 'bg-orange-500/10 text-orange-400 border-orange-500/30';
+      case 'pending':
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+      default:
+        return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+    }
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (!submission) {
+    return (
+      <div className="text-center py-12 px-4">
+        <div className="text-gray-400 text-sm">
+          Select a submission to view details
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <h2 className="text-xl font-bold text-white">Submission Details</h2>
+        <p className="text-sm text-gray-400">{formatDate(submission.createdAt)}</p>
+      </div>
+
+      {/* Status Info */}
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-[#0f0f23] border border-gray-800 rounded-lg p-4">
+          <p className="text-xs text-gray-500 mb-2">Status</p>
+          <p className={`px-3 py-1.5 rounded text-sm font-semibold border inline-block ${getStatusColor(submission.status)}`}>
+            {submission.status.charAt(0).toUpperCase() + submission.status.slice(1)}
+          </p>
+        </div>
+        <div className="bg-[#0f0f23] border border-gray-800 rounded-lg p-4">
+          <p className="text-xs text-gray-500 mb-2">Language</p>
+          <p className="text-sm text-white font-medium">{submission.language}</p>
+        </div>
+      </div>
+
+      {/* Test Results */}
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-2">Test Case Results</h3>
+        <div className="bg-[#0f0f23] rounded-lg p-4 border border-gray-800">
+          <p className="text-sm">
+            <span className="text-emerald-400 font-semibold">{submission.testCasesPassed}</span>
+            <span className="text-gray-400"> / </span>
+            <span className="text-gray-300 font-semibold">{submission.testCasesTotal}</span>
+            <span className="text-gray-500"> test cases passed</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Performance Metrics */}
+      {submission.runtime > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-2">Performance</h3>
+          <div className="bg-[#0f0f23] rounded-lg p-4 border border-gray-800 grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-xs text-gray-600 mb-1">Runtime</p>
+              <p className="text-sm text-white font-mono">{submission.runtime.toFixed(2)}ms</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-600 mb-1">Memory</p>
+              <p className="text-sm text-white font-mono">{submission.memory}MB</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {submission.errorMessage && (
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-2">Error Message</h3>
+          <div className="bg-red-500/10 rounded-lg p-4 border border-red-500/30 max-h-32 overflow-y-auto">
+            <p className="text-sm text-red-400 font-mono break-words">{submission.errorMessage}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Code */}
+      <div>
+        <h3 className="text-sm font-semibold text-white mb-2">Code</h3>
+        <div className="bg-[#0f0f23] rounded-lg border border-gray-800 overflow-hidden">
+          <pre className="p-4 overflow-x-auto">
+            <code className="text-xs text-gray-300 leading-relaxed">
+              {submission.code}
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const langMap = {
   cpp: 'c++',
@@ -30,6 +272,7 @@ const ProblemPage = () => {
   const [selectedTestCase, setSelectedTestCase] = useState(0);
   const [fontSize, setFontSize] = useState(14);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
   
   // Resizable panels state
   const [leftWidth, setLeftWidth] = useState(50); // percentage
@@ -581,8 +824,19 @@ const ProblemPage = () => {
               {activeLeftTab === 'submissions' && (
                 <div className="space-y-4">
                   <h2 className="text-xl font-bold text-white">My Submissions</h2>
-                  <div className="bg-[#0f0f23] border border-gray-800 rounded-lg">
-                    <SubmissionHistory problemId={problemId} />
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="bg-[#0f0f23] border border-gray-800 rounded-lg overflow-hidden max-h-96">
+                      <SubmissionHistory 
+                        problemId={problemId}
+                        onSelectSubmission={setSelectedSubmission}
+                        selectedSubmissionId={selectedSubmission?._id}
+                      />
+                    </div>
+                    {selectedSubmission && (
+                      <div className="bg-[#0f0f23] border border-gray-800 rounded-lg p-4">
+                        <SubmissionDetails submission={selectedSubmission} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

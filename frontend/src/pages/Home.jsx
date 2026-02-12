@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import AnimatedBackground from './AnimatedBackground';
 import HeaderPage from "../pages/Header"
 import logo from '../assets/logo.png';
+import TestLottie from "../component/anim"
 import './authBackground.css';
 import AdminUpload from '../component/AdminUpload';
 
@@ -147,9 +148,9 @@ function Home() {
       {/* ==================== HEADER / NAVIGATION ==================== */}
       <HeaderPage></HeaderPage>
   
-      <div className="relative z-10">
+      <div className="relative z-8">
       {/* ==================== HERO SECTION ==================== */}
-      <section className="min-h-screen flex items-center justify-center px-4 py-20 relative overflow-hidden">
+      <section className="min-h-screen flex items-center justify-center px-4 py-10 relative overflow-hidden">
         {/* Gradient Background Elements */}
         <div className="absolute top-20 left-10 w-72 h-72 bg-purple-600/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-10 right-10 w-72 h-72 bg-orange-600/10 rounded-full blur-3xl"></div>
@@ -215,10 +216,11 @@ function Home() {
             </div>
           </div>
 
-          {/* Right Side - Reserved for Custom Animation */}
-          <div className="h-96 flex items-center justify-center">
-            {/* Your animation will go here */}
+          {/* Right Side - Owl video */}
+          <div className="h-96 ml-8 lg:ml-20 xl:ml-32 flex items-center justify-center">
+            <TestLottie/>
           </div>
+
         </div>
       </section>
 

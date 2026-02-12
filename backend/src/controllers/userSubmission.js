@@ -191,10 +191,56 @@ const runCode = async (req, res) => {
   }
 }
 
-// const mysubmission = async(res,req)=>{
-         
-//      const userId=req.body._id;
-//      const problemId =
-// }
+const getSubmissions = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const problemId = req.params.id;
 
-module.exports = {submitCode, runCode };
+    if (!userId || !problemId) {
+      return res.status(400).json({ error: "Missing userId or problemId" });
+    }
+
+    // Fetch all submissions for this user and problem, sorted by latest first
+    const submissions = await Submission.find({
+      userId,
+      problemId
+    })
+      .select('code language status testCasesPassed testCasesTotal runtime memory errorMessage createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.status(200).json(submissions);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+const getSubmissionById = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const submissionId = req.params.submissionId;
+
+    if (!submissionId) {
+      return res.status(400).json({ error: "Missing submissionId" });
+    }
+
+    // Fetch specific submission, verify ownership
+    const submission = await Submission.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ error: "Submission not found" });
+    }
+
+    if (submission.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ error: "Unauthorized access to this submission" });
+    }
+
+    res.status(200).json(submission);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+module.exports = {submitCode, runCode, getSubmissions, getSubmissionById};

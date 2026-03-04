@@ -31,12 +31,52 @@ const userSchema = new Schema({
         enum:['user','admin'],
         default:'user'
     },
+    username: {
+        type: String,
+        trim: true
+    },
+    avatar: {
+        type: String,
+        trim: true
+    },
+    bio: {
+        type: String,
+        trim: true,
+        maxLength: 240
+    },
+    location: {
+        type: String,
+        trim: true,
+        maxLength: 80
+    },
+    github: {
+        type: String,
+        trim: true
+    },
+    linkedin: {
+        type: String,
+        trim: true
+    },
+    portfolio: {
+        type: String,
+        trim: true
+    },
+    shareProfile: {
+        type: String,
+        trim: true
+    },
+    goalTarget: {
+        type: Number,
+        default: 500,
+        min: 1,
+        max: 10000
+    },
     problemSolved:{
         type:[{
             type:Schema.Types.ObjectId,
             ref:'problem'
         }],
-        unique:true
+        default: []
     },
     password:{
         type:String,

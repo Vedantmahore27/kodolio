@@ -67,7 +67,7 @@ const login = async (req, res)=>{
         if(!match) throw new Error("Invalid Credentials");
         
         const reply ={
-            firstname: user.firstname,
+            firstName: user.firstName,
             emailId: user.emailId,
             _id : user._id,
             role : user.role

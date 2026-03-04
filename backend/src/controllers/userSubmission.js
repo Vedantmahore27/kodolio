@@ -78,6 +78,14 @@ const submitCode = async (req, res) => {
     submittedResult.runtime = runtime;
 
     await submittedResult.save();
+    
+    console.log("[SUBMISSION DEBUG] Submission saved!");
+    console.log("[SUBMISSION DEBUG] Status:", status);
+    console.log("[SUBMISSION DEBUG] Test cases:", testCasesPassed, "/", Problem.hiddenTestCases.length);
+    console.log("[SUBMISSION DEBUG] All tests passed:", testCasesPassed === Problem.hiddenTestCases.length);
+    console.log("[SUBMISSION DEBUG] Created at (raw):", submittedResult.createdAt);
+    console.log("[SUBMISSION DEBUG] Created at (UTC date):", new Date(submittedResult.createdAt).toISOString().slice(0, 10));
+    console.log("[SUBMISSION DEBUG] Current UTC date:", new Date().toISOString().slice(0, 10));
 
     //abhi hame check karna hai current problem is already solved or we have to solve
     // problemId ko inset karo problem solved me 

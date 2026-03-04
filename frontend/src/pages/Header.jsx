@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../authSlice';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Flame } from 'lucide-react';
 import logo from '../assets/logo.png';
 import image from "../assets/image.png"
+import axiosClient from '../utils/axiosClient';
 import pro from "../assets/problem.png"
 import contest from "../assets/contest.png"
 import discussion from "../assets/discussion.png"
@@ -15,10 +16,54 @@ import admin from "../assets/admin.png"
 const HeaderPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  // Fetch user profile to get avatar
+  useEffect(() => {
+    if (isAuthenticated && user?._id) {
+      const fetchProfile = async () => {
+        try {
+          console.log("[HEADER] Fetching profile for user:", user._id);
+          const res = await axiosClient.get("/user/profile");
+          console.log("[HEADER] Profile fetched successfully:", res.data);
+          if (res.data?.success && res.data?.profile) {
+            setUserProfile(res.data.profile);
+          } else {
+            console.warn("[HEADER] Invalid profile response:", res.data);
+          }
+        } catch (err) {
+          console.error("[HEADER] Failed to fetch profile:", err);
+          console.error("[HEADER] Error details:", err.response?.data);
+        }
+      };
+      fetchProfile();
+    }
+  }, [isAuthenticated, user?._id]);
+
+  // Listen for profile update events (triggered after successful submission)
+  useEffect(() => {
+    const handleProfileUpdate = async () => {
+      if (isAuthenticated && user?._id) {
+        try {
+          console.log("[HEADER] Refreshing profile after submission");
+          const res = await axiosClient.get("/user/profile");
+          if (res.data?.success && res.data?.profile) {
+            setUserProfile(res.data.profile);
+            console.log("[HEADER] Profile refreshed, new streak:", res.data.profile.streak);
+          }
+        } catch (err) {
+          console.error("[HEADER] Failed to refresh profile:", err);
+        }
+      }
+    };
+
+    window.addEventListener('profileUpdate', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdate', handleProfileUpdate);
+  }, [isAuthenticated, user?._id]);
 
   const handleLogout = async () => {
     try {
@@ -31,6 +76,7 @@ const HeaderPage = () => {
   };
 console.log("HEADER user:", user);
 console.log("HEADER role:", user?.role);
+console.log("HEADER userProfile:", userProfile);
   return (
     <header className="relative z-20 backdrop-blur-md bg-purple-950/20 border-b border-purple-500/20">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -128,16 +174,32 @@ console.log("HEADER role:", user?.role);
                   )}
              </div>
 
-            <div className="ml-auto relative">
+            <div className="ml-auto relative flex items-center">
               {isAuthenticated ? (
                 <>
+                  {/* Streak Indicator */}
+                  <div className={`inline-flex items-center gap-1.5 mr-3 px-3 py-1.5 rounded-full border transition-all ${
+                    (userProfile?.streak && userProfile.streak > 0) 
+                      ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
+                      : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
+                  }`}>
+                    <Flame size={16} className={
+                      (userProfile?.streak && userProfile.streak > 0)
+                        ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
+                        : 'text-slate-600'
+                    } />
+                    <span className="text-sm font-semibold">
+                      {userProfile?.streak || 0}
+                    </span>
+                  </div>
+
                   {/* Profile Avatar */}
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-400 hover:scale-105 transition"
                   >
                     <img
-                      src={user?.avatar || image}
+                      src={userProfile?.avatar || user?.avatar || image}
                       alt="profile"
                       className="w-full h-full object-cover"
                     />
@@ -145,7 +207,7 @@ console.log("HEADER role:", user?.role);
 
                   {/* Dropdown */}
                   {profileOpen && (
-                    <div className="absolute right-0 mt-3 w-40 bg-purple-950 border border-purple-500/30 rounded-xl shadow-lg overflow-hidden">
+                    <div className="absolute top-full right-0 mt-2 w-40 bg-purple-950 border border-purple-500/30 rounded-xl shadow-lg overflow-hidden z-50">
                       <NavLink
                         to="/profile"
                         onClick={() => setProfileOpen(false)}
@@ -186,7 +248,25 @@ console.log("HEADER role:", user?.role);
           </div>
          
           {/* Mobile Menu Button */}
-          <div className="md:hidden ml-auto">
+          <div className="md:hidden ml-auto flex items-center gap-2">
+            {/* Mobile Streak Indicator (visible in header) */}
+            {isAuthenticated && (
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
+                (userProfile?.streak && userProfile.streak > 0) 
+                  ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
+                  : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
+              }`}>
+                <Flame size={14} className={
+                  (userProfile?.streak && userProfile.streak > 0)
+                    ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
+                    : 'text-slate-600'
+                } />
+                <span className="text-xs font-semibold">
+                  {userProfile?.streak || 0}
+                </span>
+              </div>
+            )}
+            
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="text-gray-300 hover:text-purple-400"
@@ -225,6 +305,22 @@ console.log("HEADER role:", user?.role);
 
             {isAuthenticated ? (
               <>
+                {/* Streak Indicator - Mobile */}
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
+                  (userProfile?.streak && userProfile.streak > 0) 
+                    ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
+                    : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
+                }`}>
+                  <Flame size={18} className={
+                    (userProfile?.streak && userProfile.streak > 0)
+                      ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
+                      : 'text-slate-600'
+                  } />
+                  <span className="text-sm font-semibold">
+                    {userProfile?.streak || 0} Day Streak
+                  </span>
+                </div>
+
                 <NavLink
                   to="/profile"
                   onClick={() => setMobileMenuOpen(false)}

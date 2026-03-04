@@ -574,6 +574,12 @@ const ProblemPage = () => {
       // Stop timer on successful submission
       if (accepted) {
         setIsTimerRunning(false);
+        console.log("[SUBMISSION DEBUG] All tests passed! Triggering profile update.");
+        console.log("[SUBMISSION DEBUG] Submission data:", data);
+        // Trigger profile refresh event for Header to update streak
+        window.dispatchEvent(new CustomEvent('profileUpdate'));
+      } else {
+        console.log("[SUBMISSION DEBUG] Some tests failed. Status:", data.status);
       }
     } catch (error) {
       console.error('Error submitting code:', error);

@@ -10,6 +10,7 @@ const problemSchema = z.object({
   description: z.string().min(1, "Description is required"),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
   tags: z.enum(["array", "linkedList", "graph", "dp"]),
+  companies: z.array(z.string()).optional(),
   visibleTestCases: z
     .array(
       z.object({
@@ -138,6 +139,32 @@ const problemSchema = z.object({
                 <option value="graph">Graph</option>
                 <option value="dp">DP</option>
               </select>
+            </div>
+          </div>
+
+          {/* COMPANIES SELECTION */}
+          <div className="bg-base-100/80 border border-purple-500/20 rounded-xl shadow-xl p-6">
+            <h2 className="text-xl font-semibold text-orange-400 mb-4">
+              🏢 Company Tags
+            </h2>
+            <p className="text-sm text-gray-400 mb-4">
+              Select companies where this problem has been asked
+            </p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple', 'Netflix', 'Adobe', 'Oracle', 'Salesforce', 'IBM', 'Uber', 'Airbnb', 'Twitter', 'LinkedIn', 'Samsung', 'Intel', 'Nvidia', 'PayPal', 'Stripe', 'Spotify', 'Others'].map((company) => (
+                <label key={company} className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    value={company}
+                    {...register("companies")}
+                    className="checkbox checkbox-primary checkbox-sm"
+                  />
+                  <span className="text-sm text-gray-300 group-hover:text-purple-400 transition-colors">
+                    {company}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 

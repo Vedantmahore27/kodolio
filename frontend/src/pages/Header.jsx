@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logoutUser } from '../authSlice';
@@ -17,32 +17,77 @@ const HeaderPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const [cachedAvatar, setCachedAvatar] = useState(() => {
+    // Initialize from localStorage
+    try {
+      return localStorage.getItem('userAvatarCache') || null;
+    } catch {
+      return null;
+    }
+  });
+  const fetchInProgressRef = useRef(false);
+  const isMountedRef = useRef(true);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Fetch user profile to get avatar
-  useEffect(() => {
-    if (isAuthenticated && user?._id) {
-      const fetchProfile = async () => {
-        try {
-          console.log("[HEADER] Fetching profile for user:", user._id);
-          const res = await axiosClient.get("/user/profile");
-          console.log("[HEADER] Profile fetched successfully:", res.data);
-          if (res.data?.success && res.data?.profile) {
-            setUserProfile(res.data.profile);
-          } else {
-            console.warn("[HEADER] Invalid profile response:", res.data);
+  const fetchProfile = useCallback(async () => {
+    // Prevent duplicate simultaneous requests
+    if (fetchInProgressRef.current) {
+      console.log("[HEADER] Profile fetch already in progress, skipping");
+      return;
+    }
+
+    if (!isAuthenticated || !user?._id) {
+      return;
+    }
+
+    fetchInProgressRef.current = true;
+    try {
+      console.log("[HEADER] Fetching profile for user:", user._id);
+      const res = await axiosClient.get("/user/profile");
+      console.log("[HEADER] Profile fetched successfully:", res.data);
+      
+      if (isMountedRef.current && res.data?.success && res.data?.profile) {
+        console.log("[HEADER] Setting userProfile:", res.data.profile);
+        setUserProfile(res.data.profile);
+        // Cache avatar URL to prevent flickering on navigation
+        if (res.data.profile.avatar) {
+          console.log("[HEADER] Setting cachedAvatar to:", res.data.profile.avatar);
+          setCachedAvatar(res.data.profile.avatar);
+          // Also save to localStorage for persistence
+          try {
+            localStorage.setItem('userAvatarCache', res.data.profile.avatar);
+          } catch (e) {
+            console.log("[HEADER] Could not save to localStorage:", e);
           }
-        } catch (err) {
-          console.error("[HEADER] Failed to fetch profile:", err);
-          console.error("[HEADER] Error details:", err.response?.data);
         }
-      };
-      fetchProfile();
+      } else {
+        console.warn("[HEADER] Invalid profile response:", res.data);
+      }
+    } catch (err) {
+      console.error("[HEADER] Failed to fetch profile:", err);
+      console.error("[HEADER] Error details:", err.response?.data);
+    } finally {
+      fetchInProgressRef.current = false;
     }
   }, [isAuthenticated, user?._id]);
+
+  // Fetch profile once on mount or when user changes
+  useEffect(() => {
+    isMountedRef.current = true;
+    
+    if (isAuthenticated && user?._id) {
+      console.log("[HEADER] Triggering profile fetch on mount/user change");
+      fetchProfile();
+    }
+
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, [isAuthenticated, user?._id, fetchProfile]);
 
   // Listen for profile update events (triggered after successful submission)
   useEffect(() => {
@@ -51,8 +96,20 @@ const HeaderPage = () => {
         try {
           console.log("[HEADER] Refreshing profile after submission");
           const res = await axiosClient.get("/user/profile");
-          if (res.data?.success && res.data?.profile) {
+          if (isMountedRef.current && res.data?.success && res.data?.profile) {
+            console.log("[HEADER] New profile data:", res.data.profile);
             setUserProfile(res.data.profile);
+            // Always update cachedAvatar with the latest avatar from server
+            if (res.data.profile.avatar) {
+              console.log("[HEADER] Setting cachedAvatar to:", res.data.profile.avatar);
+              setCachedAvatar(res.data.profile.avatar);
+              // Also save to localStorage for persistence
+              try {
+                localStorage.setItem('userAvatarCache', res.data.profile.avatar);
+              } catch (e) {
+                console.log("[HEADER] Could not save to localStorage:", e);
+              }
+            }
             console.log("[HEADER] Profile refreshed, new streak:", res.data.profile.streak);
           }
         } catch (err) {
@@ -134,7 +191,7 @@ console.log("HEADER userProfile:", userProfile);
                </NavLink>
 
               <NavLink
-                 to="/dicussion"
+                 to="/discussion"
                  className={({ isActive }) =>
                    `flex items-center gap-2 font-medium transition-colors ${
                      isActive
@@ -197,11 +254,19 @@ console.log("HEADER userProfile:", userProfile);
                   <button
                     onClick={() => setProfileOpen(!profileOpen)}
                     className="w-10 h-10 rounded-full overflow-hidden border-2 border-purple-400 hover:scale-105 transition"
+                    title="Profile menu"
                   >
                     <img
-                      src={userProfile?.avatar || user?.avatar || image}
+                      key={cachedAvatar || userProfile?.avatar || 'default'}
+                      src={cachedAvatar || userProfile?.avatar || image}
                       alt="profile"
+                      onError={(e) => {
+                        // Fallback if avatar URL is broken
+                        console.log("[HEADER] Avatar image failed to load, using fallback");
+                        e.target.src = image;
+                      }}
                       className="w-full h-full object-cover"
+                      style={{ backgroundColor: '#4c1d95' }}
                     />
                   </button>
 
@@ -296,7 +361,7 @@ console.log("HEADER userProfile:", userProfile);
             </NavLink>
 
             <NavLink
-              to="/discussions"
+              to="/discussion"
               onClick={() => setMobileMenuOpen(false)}
               className="block text-gray-300 hover:text-purple-400"
             >

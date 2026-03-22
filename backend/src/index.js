@@ -11,6 +11,7 @@ const app = express();
 const authRouter= require("./routes/userAuth")
 const problemRouter=require("./routes/problemCreator");
 const submitRouter = require("./routes/submit")
+const discussionRouter = require("./routes/discussion")
 const cors= require('cors')
 
 app.use(cors({
@@ -24,6 +25,7 @@ app.use(cookieparser());
 app.use('/user',authRouter )
 app.use('/problem',problemRouter)
 app.use('/submission',submitRouter)
+app.use('/discussion',discussionRouter)
 const InitializeConnection = async ()=> {
   try {
     await Promise.all([

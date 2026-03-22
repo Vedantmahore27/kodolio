@@ -21,6 +21,12 @@ const problemSchema = new Schema({
         enum : ['array','binary-search','linkedlist','stack','recursion','queues','Dynamic Programming','two pointer','sliding window','graph'],
         required:true
     },
+    company:{
+        type:[String],
+        enum : ['Google','Amazon','Microsoft','Facebook','Apple','Netflix','LinkedIn','Tesla','Uber','Adobe'],
+        default: [],
+        required: false
+    },
     visibleTestCases:[
         {
             input:{

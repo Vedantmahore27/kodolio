@@ -3,7 +3,7 @@
 
 
 import { Code2, Brain, Trophy, MessageSquare, TrendingUp, ArrowRight } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import AnimatedBackground from './AnimatedBackground';
 import HeaderPage from "../pages/Header"
@@ -14,6 +14,7 @@ import AdminUpload from '../component/AdminUpload';
 
 
 function Home() {
+  const navigate = useNavigate();
   // Typing animation component - words alternate between white, purple, and orange
   // Content stays in fixed position while typing
   const TypingAnimation = ({ text, speed = 100 }) => {
@@ -528,6 +529,7 @@ function Home() {
                   group cursor-pointer
                   flex-shrink-0
                 `}
+                onClick={() => navigate(`/company/${company.name.toLowerCase()}`)}
                 style={{
                   width: '380px',
                   backgroundColor: `${company.bgColor}80`,

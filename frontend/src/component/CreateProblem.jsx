@@ -3,14 +3,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import axiosClient from "../utils/axiosClient";
 import { useNavigate } from "react-router";
+import { useState } from "react";
 
 // ================= ZOD SCHEMA =================
+const COMPANIES = ["Google", "Amazon", "Microsoft", "Facebook", "Apple", "Netflix", "LinkedIn", "Tesla", "Uber", "Adobe"];
+
 const problemSchema = z.object({
   title: z.string().min(1, "Title is required"),
   description: z.string().min(1, "Description is required"),
   difficulty: z.enum(["Easy", "Medium", "Hard"]),
-  tags: z.enum(["array", "linkedList", "graph", "dp"]),
-  companies: z.array(z.string()).optional(),
+  tags: z.enum(["array", "binary-search", "linkedlist", "stack", "recursion", "queues", "Dynamic Programming", "two pointer", "sliding window", "graph"]),
+  company: z.array(z.enum(COMPANIES)).min(1, "Select at least one company"),
   visibleTestCases: z
     .array(
       z.object({
@@ -49,6 +52,7 @@ const problemSchema = z.object({
 // ================= COMPONENT =================
  function  CreateProblem() {
   const navigate = useNavigate();
+  const [submitting, setSubmitting] = useState(false);
 
   const {
     register,
@@ -58,6 +62,17 @@ const problemSchema = z.object({
   } = useForm({
     resolver: zodResolver(problemSchema),
     defaultValues: {
+      title: "",
+      description: "",
+      difficulty: "Easy",
+      tags: "array",
+      company: [],
+      visibleTestCases: [
+        { input: "", output: "", explanation: "" }
+      ],
+      hiddenTestCases: [
+        { input: "", output: "" }
+      ],
       startCode: [
         { language: "C++", initialCode: "" },
         { language: "Java", initialCode: "" },
@@ -79,11 +94,43 @@ const problemSchema = z.object({
 
   const onSubmit = async (data) => {
     try {
-      await axiosClient.post("/problem/create", data);
+      console.log("[CreateProblem] Submitting new problem...");
+      console.log("[CreateProblem] Form data:", {
+        title: data.title,
+        company: data.company,
+        hasVisibleTestCases: Array.isArray(data.visibleTestCases),
+        visibleTestCasesCount: data.visibleTestCases?.length,
+        hasReferenceSolution: Array.isArray(data.referenceSolution),
+        referenceSolutionCount: data.referenceSolution?.length
+      });
+      
+      setSubmitting(true);
+      
+      // Minimum delay to ensure loading spinner is visible
+      const [response] = await Promise.all([
+        axiosClient.post("/problem/create", data),
+        new Promise(resolve => setTimeout(resolve, 500))
+      ]);
+      
+      console.log("[CreateProblem] Problem created successfully");
       alert("Problem created successfully 🚀");
       navigate("/admin");
     } catch (error) {
-      alert(error.response?.data?.message || "Something went wrong");
+      console.error("[CreateProblem] Error:", error);
+      setSubmitting(false);
+      
+      let errorMsg = "Something went wrong";
+      if (error.response?.data?.message) {
+        errorMsg = error.response.data.message;
+      } else if (error.response?.data) {
+        errorMsg = typeof error.response.data === 'string' 
+          ? error.response.data 
+          : JSON.stringify(error.response.data);
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+      
+      alert("❌ Creation failed: " + errorMsg);
     }
   };
 
@@ -135,36 +182,35 @@ const problemSchema = z.object({
                 className="select select-bordered w-1/2 focus:border-purple-500"
               >
                 <option value="array">Array</option>
-                <option value="linkedList">Linked List</option>
+                <option value="binary-search">Binary Search</option>
+                <option value="linkedlist">Linked List</option>
+                <option value="stack">Stack</option>
+                <option value="recursion">Recursion</option>
+                <option value="queues">Queues</option>
+                <option value="Dynamic Programming">Dynamic Programming</option>
+                <option value="two pointer">Two Pointer</option>
+                <option value="sliding window">Sliding Window</option>
                 <option value="graph">Graph</option>
-                <option value="dp">DP</option>
               </select>
             </div>
-          </div>
 
-          {/* COMPANIES SELECTION */}
-          <div className="bg-base-100/80 border border-purple-500/20 rounded-xl shadow-xl p-6">
-            <h2 className="text-xl font-semibold text-orange-400 mb-4">
-              🏢 Company Tags
-            </h2>
-            <p className="text-sm text-gray-400 mb-4">
-              Select companies where this problem has been asked
-            </p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {['Google', 'Amazon', 'Microsoft', 'Meta', 'Apple', 'Netflix', 'Adobe', 'Oracle', 'Salesforce', 'IBM', 'Uber', 'Airbnb', 'Twitter', 'LinkedIn', 'Samsung', 'Intel', 'Nvidia', 'PayPal', 'Stripe', 'Spotify', 'Others'].map((company) => (
-                <label key={company} className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    value={company}
-                    {...register("companies")}
-                    className="checkbox checkbox-primary checkbox-sm"
-                  />
-                  <span className="text-sm text-gray-300 group-hover:text-purple-400 transition-colors">
-                    {company}
-                  </span>
-                </label>
-              ))}
+            {/* COMPANY SELECTION */}
+            <div className="mt-4">
+              <label className="block text-sm font-semibold text-purple-300 mb-3">🏢 Companies (Select Multiple)</label>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {COMPANIES.map((company) => (
+                  <label key={company} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      value={company}
+                      {...register("company")}
+                      className="checkbox checkbox-purple"
+                    />
+                    <span className="text-sm text-gray-300">{company}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.company && <span className="text-red-500 text-sm">{errors.company.message}</span>}
             </div>
           </div>
 
@@ -303,9 +349,19 @@ const problemSchema = z.object({
           {/* SUBMIT */}
           <button
             type="submit"
-            className="btn  bg-gradient-to-r from-purple-400 to-orange-400 text-black font-semibold hover:scale-[1.02] transition-all"
+            disabled={submitting}
+            className={`btn bg-gradient-to-r from-purple-400 to-orange-400 text-black font-semibold hover:scale-[1.02] transition-all ${
+              submitting ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-          Create Problem
+            {submitting ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="loading loading-spinner loading-md"></span>
+                <span>Creating...</span>
+              </span>
+            ) : (
+              'Create Problem'
+            )}
           </button>
         </form>
       </div>

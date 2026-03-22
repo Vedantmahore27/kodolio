@@ -35,9 +35,11 @@ const options = {
 async function fetchData() {
 	try {
 		const response = await axios.request(options);
+		console.log("[submitBatch] Response received:", response.data);
 		return response.data;
 	} catch (error) {
-		console.error(error);
+		console.error("[submitBatch] Error:", error.message);
+		throw new Error(`Failed to submit batch: ${error.message}`);
 	}
 }
 
@@ -73,16 +75,21 @@ const options = {
 async function fetchData() {
 	try {
 		const response = await axios.request(options);
+		console.log("[submitToken] Response received:", response.data);
 		return response.data;
 	} catch (error) {
-		console.error(error);
+		console.error("[submitToken] Error:", error.message);
+		throw new Error(`Failed to fetch token results: ${error.message}`);
 	}
 }
 
 
  while(true){
-
  const result =  await fetchData();
+
+ if (!result || !result.submissions) {
+   throw new Error("Invalid response structure from judge API");
+ }
 
   const IsResultObtained =  result.submissions.every((r)=>r.status_id>2);
 

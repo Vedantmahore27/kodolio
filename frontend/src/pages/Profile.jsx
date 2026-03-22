@@ -142,6 +142,8 @@ export default function Profile() {
   const [toast, setToast] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [formErrors, setFormErrors] = useState({});
+  const [avatarLoading, setAvatarLoading] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -213,23 +215,39 @@ export default function Profile() {
     };
   }, [authUser]);
 
-  const handleRefreshHeatmap = async () => {
+  const handleRefreshHeatmap = async (silent = false) => {
     try {
       const { data } = await axiosClient.get(`/user/profile?year=${selectedYear}`);
       if (data?.success) {
-        setProfilePayload(data);
-        setToast({ msg: "Heatmap updated! ✨", type: "success" });
-        setTimeout(() => setToast(null), 3000);
+        // Only update heatmap data, preserving avatar and other profile data
+        setProfilePayload((prev) => ({
+          ...prev,
+          heatmapValues: data.heatmapValues,
+          goal: data.goal,
+          skillRadar: data.skillRadar,
+          badges: data.badges,
+          codingStats: data.codingStats,
+          // Keep existing profile to prevent avatar flickering
+          profile: prev?.profile || data.profile,
+        }));
+        if (!silent) {
+          setToast({ msg: "Heatmap updated! ✨", type: "success" });
+          setTimeout(() => setToast(null), 3000);
+        }
       }
     } catch (error) {
       console.error("Failed to refresh heatmap", error);
+      if (!silent) {
+        setToast({ msg: "Failed to refresh heatmap", type: "error" });
+        setTimeout(() => setToast(null), 3000);
+      }
     }
   };
 
-  // Auto-refresh heatmap every 60 seconds for real-time data
+  // Auto-refresh heatmap every 60 seconds for real-time data (silent refresh to prevent flickering)
   useEffect(() => {
     const refreshInterval = setInterval(() => {
-      handleRefreshHeatmap();
+      handleRefreshHeatmap(true); // Silent refresh to prevent UI flickering
     }, 60000); // Refresh every 60 seconds
 
     return () => clearInterval(refreshInterval);
@@ -268,12 +286,48 @@ export default function Profile() {
 
     window.addEventListener('profileUpdate', handleProfileUpdate);
     return () => window.removeEventListener('profileUpdate', handleProfileUpdate);
-  }, [authUser, selectedYear]);
+  }, [authUser, selectedYear, handleRefreshHeatmap]);
+
+  // Validation function for form data
+  const validateProfile = () => {
+    const errors = {};
+    
+    if (!formData.firstName?.trim()) {
+      errors.firstName = "First name is required";
+    }
+    
+    if (!formData.lastName?.trim()) {
+      errors.lastName = "Last name is required";
+    }
+    
+    if (!formData.username?.trim()) {
+      errors.username = "Username is required";
+    }
+    
+    // Avatar is optional but if provided, must be a valid URL or preset
+    if (formData.avatar && typeof formData.avatar === 'string' && !formData.avatar.trim()) {
+      errors.avatar = "Avatar URL cannot be empty";
+    }
+    
+    return errors;
+  };
 
   const handleSaveProfile = async () => {
+    // Validate form before submission
+    const errors = validateProfile();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      setToast({ msg: "Please fill in all required fields", type: "error" });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    
+    setFormErrors({});
     setIsSaving(true);
+    console.log("[PROFILE] Saving profile with avatar:", formData.avatar);
     try {
       const { data } = await axiosClient.patch("/user/profile", formData);
+      console.log("[PROFILE] Profile save response:", data);
       if (data?.success) {
         // Update profilePayload with new data
         setProfilePayload((prev) => ({
@@ -285,16 +339,42 @@ export default function Profile() {
         }));
         // Refresh the full profile to ensure everything is in sync
         const { data: freshData } = await axiosClient.get("/user/profile");
+        console.log("[PROFILE] Fresh profile data after save:", freshData);
         if (freshData?.success) {
           setProfilePayload(freshData);
         }
         setIsEditing(false);
-        setToast({ msg: "Profile updated successfully!", type: "success" });
+        setToast({ msg: "Profile updated successfully! ✨", type: "success" });
+        
+        // Save avatar to localStorage for Header fallback
+        if (formData.avatar) {
+          try {
+            localStorage.setItem('userAvatarCache', formData.avatar);
+            console.log("[PROFILE] Avatar saved to localStorage:", formData.avatar);
+          } catch (e) {
+            console.log("[PROFILE] Could not save to localStorage:", e);
+          }
+        }
+        
+        // Notify Header to refresh avatar/profile (especially after avatar change)
+        console.log("[PROFILE] Dispatching profileUpdate event");
+        window.dispatchEvent(new Event('profileUpdate'));
+        
         setTimeout(() => setToast(null), 3000);
       }
     } catch (error) {
-      setToast({ msg: error?.response?.data?.error || "Failed to save profile", type: "error" });
-      setTimeout(() => setToast(null), 3000);
+      const errorMsg = error?.response?.data?.error || "Failed to save profile";
+      console.error("[PROFILE] Save error:", error);
+      
+      // Parse backend validation errors if they exist
+      if (error?.response?.data?.errors) {
+        const backendErrors = error.response.data.errors;
+        setFormErrors(backendErrors);
+        setToast({ msg: "Please check the highlighted fields", type: "error" });
+      } else {
+        setToast({ msg: errorMsg, type: "error" });
+      }
+      setTimeout(() => setToast(null), 4000);
     } finally {
       setIsSaving(false);
     }
@@ -302,6 +382,7 @@ export default function Profile() {
 
   const handleCancel = () => {
     setIsEditing(false);
+    setFormErrors({});
     // Reset form from profilePayload which has the saved data from DB
     if (profilePayload?.profile) {
       setFormData({
@@ -506,7 +587,10 @@ export default function Profile() {
                       {avatarPresets.map((preset) => (
                         <button
                           key={preset.id}
-                          onClick={() => setFormData({ ...formData, avatar: preset.preview })}
+                          onClick={() => {
+                            setFormData({ ...formData, avatar: preset.preview });
+                            setAvatarLoading(true);
+                          }}
                           className={`relative rounded-xl border-2 p-3 transition-all ${
                             formData.avatar === preset.preview
                               ? "border-orange-400 bg-orange-500/20"
@@ -516,6 +600,7 @@ export default function Profile() {
                           <img
                             src={preset.preview}
                             alt={preset.name}
+                            onLoad={() => setAvatarLoading(false)}
                             className="w-full h-20 rounded-lg object-cover mb-2"
                           />
                           <p className="text-xs font-medium text-slate-300 text-center">{preset.name}</p>
@@ -528,7 +613,10 @@ export default function Profile() {
                     <input
                       type="text"
                       value={formData.avatar}
-                      onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
+                      onChange={(e) => {
+                        setFormData({ ...formData, avatar: e.target.value });
+                        setAvatarLoading(true);
+                      }}
                       placeholder="https://example.com/avatar.jpg"
                       className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-orange-400 focus:outline-none"
                     />
@@ -536,9 +624,14 @@ export default function Profile() {
                 </div>
               ) : (
                 <img
+                  key={profile.avatar}
                   src={profile.avatar}
                   alt={profile.name}
                   className="h-28 w-28 rounded-2xl border-4 border-slate-950 object-cover shadow-[0_0_30px_rgba(168,85,247,0.45)]"
+                  style={{ 
+                    backgroundColor: '#1e293b',
+                    imgRendering: 'auto'
+                  }}
                 />
               )}
               <div className="pt-2 flex-1">
@@ -546,32 +639,71 @@ export default function Profile() {
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">First Name</label>
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">First Name *</label>
                         <input
                           type="text"
                           value={formData.firstName}
-                          onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                          className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:border-orange-400 focus:outline-none"
+                          onChange={(e) => {
+                            setFormData({ ...formData, firstName: e.target.value });
+                            if (formErrors.firstName) setFormErrors({ ...formErrors, firstName: "" });
+                          }}
+                          className={`w-full rounded-lg border bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:outline-none transition-all ${
+                            formErrors.firstName 
+                              ? "border-red-500/50 focus:border-red-400 focus:ring-2 focus:ring-red-400/20" 
+                              : "border-violet-500/30 focus:border-orange-400"
+                          }`}
+                          placeholder="John"
                         />
+                        {formErrors.firstName && (
+                          <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle size={12} /> {formErrors.firstName}
+                          </p>
+                        )}
                       </div>
                       <div>
-                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Last Name</label>
+                        <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Last Name *</label>
                         <input
                           type="text"
                           value={formData.lastName}
-                          onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                          className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:border-orange-400 focus:outline-none"
+                          onChange={(e) => {
+                            setFormData({ ...formData, lastName: e.target.value });
+                            if (formErrors.lastName) setFormErrors({ ...formErrors, lastName: "" });
+                          }}
+                          className={`w-full rounded-lg border bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:outline-none transition-all ${
+                            formErrors.lastName 
+                              ? "border-red-500/50 focus:border-red-400 focus:ring-2 focus:ring-red-400/20" 
+                              : "border-violet-500/30 focus:border-orange-400"
+                          }`}
+                          placeholder="Doe"
                         />
+                        {formErrors.lastName && (
+                          <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                            <AlertTriangle size={12} /> {formErrors.lastName}
+                          </p>
+                        )}
                       </div>
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Username</label>
+                      <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Username *</label>
                       <input
                         type="text"
                         value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                        className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:border-orange-400 focus:outline-none"
+                        onChange={(e) => {
+                          setFormData({ ...formData, username: e.target.value });
+                          if (formErrors.username) setFormErrors({ ...formErrors, username: "" });
+                        }}
+                        className={`w-full rounded-lg border bg-slate-800/60 px-3 py-2 text-sm text-slate-100 focus:outline-none transition-all ${
+                          formErrors.username 
+                            ? "border-red-500/50 focus:border-red-400 focus:ring-2 focus:ring-red-400/20" 
+                            : "border-violet-500/30 focus:border-orange-400"
+                        }`}
+                        placeholder="john_doe"
                       />
+                      {formErrors.username && (
+                        <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
+                          <AlertTriangle size={12} /> {formErrors.username}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bio</label>
@@ -580,8 +712,9 @@ export default function Profile() {
                         onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                         placeholder="Tell us about yourself..."
                         rows={3}
-                        className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-orange-400 focus:outline-none resize-none"
+                        className="w-full rounded-lg border border-violet-500/30 bg-slate-800/60 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:border-orange-400 focus:outline-none resize-none focus:ring-2 focus:ring-orange-400/20 transition-all"
                       />
+                      <p className="text-xs text-slate-500 mt-1">{formData.bio.length}/300 characters</p>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
@@ -625,8 +758,9 @@ export default function Profile() {
                 <>
                   <button
                     onClick={handleSaveProfile}
-                    disabled={isSaving}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-semibold hover:brightness-110 transition disabled:opacity-50"
+                    disabled={isSaving || Object.keys(formErrors).length > 0}
+                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={Object.keys(formErrors).length > 0 ? "Please fill in required fields" : ""}
                   >
                     <Save size={16} /> {isSaving ? "Saving..." : "Save"}
                   </button>
@@ -640,7 +774,10 @@ export default function Profile() {
               ) : (
                 <>
                   <button
-                    onClick={() => setIsEditing(true)}
+                    onClick={() => {
+                      setIsEditing(true);
+                      setFormErrors({});
+                    }}
                     className="inline-flex items-center justify-center gap-2 rounded-xl bg-linear-to-r from-violet-600 to-fuchsia-600 px-4 py-2 text-sm font-semibold hover:brightness-110 transition"
                   >
                     <Edit3 size={16} /> Edit Profile

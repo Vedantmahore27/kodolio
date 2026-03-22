@@ -28,7 +28,7 @@ function Signup() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/Problem");
+      navigate("/");
     }
   }, [isAuthenticated, navigate]);
 

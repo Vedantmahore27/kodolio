@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Heart, Trash2, Edit2, Send, AlertCircle } from 'lucide-react';
-import axiosClient from '../utils/axiosClient';
+import io from 'socket.io-client';
 import HeaderPage from './Header';
 import AnimatedBackground from './AnimatedBackground';
 
@@ -13,61 +13,70 @@ function Discussion() {
     const [error, setError] = useState('');
     const [editingId, setEditingId] = useState(null);
     const [editingText, setEditingText] = useState('');
-    const [isUserActive, setIsUserActive] = useState(false);
     const messagesEndRef = useRef(null);
-    const inactivityTimerRef = useRef(null);
+    const socketRef = useRef(null);
 
-    // Fetch all messages
-    const fetchMessages = async () => {
-        try {
-            setLoading(true);
-            const response = await axiosClient.get('/discussion/');
-            setMessages(response.data.data);
-            setError('');
-        } catch (err) {
-            setError('Failed to load messages');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    // Initialize socket connection
+    useEffect(() => {
+        socketRef.current = io('http://localhost:3000', {
+            withCredentials: true
+        });
+
+        // Connect to discussion room
+        socketRef.current.emit('join_discussion');
+
+        // Load initial messages
+        socketRef.current.on('load_messages', (msgs) => {
+            setMessages(msgs);
+        });
+
+        // Listen for new messages
+        socketRef.current.on('new_message', (msg) => {
+            setMessages(prev => [msg, ...prev]);
+        });
+
+        // Listen for updated messages
+        socketRef.current.on('message_updated', (data) => {
+            setMessages(prev =>
+                prev.map(msg =>
+                    msg._id === data.messageId
+                        ? { ...msg, message: data.message, updatedAt: data.updatedAt }
+                        : msg
+                )
+            );
+            setEditingId(null);
+            setEditingText('');
+        });
+
+        // Listen for deleted messages
+        socketRef.current.on('message_deleted', (data) => {
+            setMessages(prev => prev.filter(msg => msg._id !== data.messageId));
+        });
+
+        // Listen for likes
+        socketRef.current.on('message_liked', (data) => {
+            setMessages(prev =>
+                prev.map(msg =>
+                    msg._id === data.messageId
+                        ? { ...msg, likes: data.likes }
+                        : msg
+                )
+            );
+        });
+
+        // Handle errors
+        socketRef.current.on('error', (err) => {
+            setError(err.message);
+        });
+
+        return () => {
+            socketRef.current?.disconnect();
+        };
+    }, []);
 
     // Scroll to bottom
-    const scrollToBottom = () => {
+    useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
-    // Smart polling - pause when user is active
-    useEffect(() => {
-        fetchMessages();
-        
-        // Only poll if user is not actively typing/editing (every 5 seconds when inactive)
-        const interval = setInterval(() => {
-            if (!isUserActive) {
-                fetchMessages();
-            }
-        }, 5000);
-        
-        return () => clearInterval(interval);
-    }, [isUserActive]);
-
-    // Track user activity
-    const handleUserActivity = () => {
-        setIsUserActive(true);
-        
-        // Clear existing timer
-        if (inactivityTimerRef.current) {
-            clearTimeout(inactivityTimerRef.current);
-        }
-        
-        // Set new timer to mark user as inactive after 3 seconds
-        inactivityTimerRef.current = setTimeout(() => {
-            setIsUserActive(false);
-        }, 3000);
-    };
-
-    useEffect(() => {
-        scrollToBottom();
     }, [messages]);
 
     // Post new message
@@ -78,72 +87,33 @@ function Discussion() {
             return;
         }
 
-        try {
-            setLoading(true);
-            await axiosClient.post('/discussion/', {
-                message: newMessage
-            });
-            setNewMessage('');
-            setError('');
-            await fetchMessages();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to post message');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        setLoading(true);
+        socketRef.current.emit('post_message', { message: newMessage });
+        setNewMessage('');
+        setError('');
+        setLoading(false);
     };
 
     // Update message
-    const handleUpdateMessage = async (messageId) => {
+    const handleUpdateMessage = (messageId) => {
         if (editingText.trim().length === 0) {
             setError('Message cannot be empty');
             return;
         }
 
-        try {
-            setLoading(true);
-            await axiosClient.patch(`/discussion/${messageId}`, {
-                message: editingText
-            });
-            setEditingId(null);
-            setEditingText('');
-            setError('');
-            await fetchMessages();
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to update message');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        socketRef.current.emit('update_message', { messageId, message: editingText });
     };
 
     // Delete message
-    const handleDeleteMessage = async (messageId) => {
+    const handleDeleteMessage = (messageId) => {
         if (window.confirm('Are you sure you want to delete this message?')) {
-            try {
-                setLoading(true);
-                await axiosClient.delete(`/discussion/${messageId}`);
-                setError('');
-                await fetchMessages();
-            } catch (err) {
-                setError(err.response?.data?.error || 'Failed to delete message');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
+            socketRef.current.emit('delete_message', { messageId });
         }
     };
 
     // Like/Unlike message
-    const handleLikeMessage = async (messageId) => {
-        try {
-            await axiosClient.post(`/discussion/${messageId}/like`);
-            await fetchMessages();
-        } catch (err) {
-            setError('Failed to like message');
-            console.error(err);
-        }
+    const handleLikeMessage = (messageId) => {
+        socketRef.current.emit('like_message', { messageId });
     };
 
     return (
@@ -159,8 +129,8 @@ function Discussion() {
                             <h1 className="text-5xl font-bold text-white mb-2">Community Discussions</h1>
                             <p className="text-gray-400">Connect with the community, share ideas and learn together</p>
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-xs font-semibold ${isUserActive ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30' : 'bg-green-500/20 text-green-300 border border-green-500/30'}`}>
-                            {isUserActive ? '⏸ Typing...' : '🟢 Live'}
+                        <div className="px-3 py-1 rounded-full text-xs font-semibold bg-green-500/20 text-green-300 border border-green-500/30">
+                            🟢 Live
                         </div>
                     </div>
                 </div>
@@ -187,9 +157,7 @@ function Discussion() {
                         value={newMessage}
                         onChange={(e) => {
                             setNewMessage(e.target.value);
-                            handleUserActivity();
                         }}
-                        onFocus={handleUserActivity}
                         placeholder="Type your message here..."
                         className="w-full p-4 rounded-lg bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 resize-none"
                         rows="4"
@@ -228,19 +196,19 @@ function Discussion() {
                                 {/* Message Header */}
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-3">
-                                        {msg.authorAvatar ? (
+                                        {msg.author?.avatar ? (
                                             <img
-                                                src={msg.authorAvatar}
-                                                alt={msg.authorName}
+                                                src={msg.author.avatar}
+                                                alt={msg.author?.firstName}
                                                 className="w-10 h-10 rounded-full object-cover"
                                             />
                                         ) : (
                                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                                                {msg.authorName?.charAt(0).toUpperCase()}
+                                                {msg.author?.firstName?.charAt(0).toUpperCase()}
                                             </div>
                                         )}
                                         <div>
-                                            <h3 className="font-bold text-white">{msg.authorName}</h3>
+                                            <h3 className="font-bold text-white">{`${msg.author?.firstName} ${msg.author?.lastName || ''}`}</h3>
                                             <p className="text-xs text-gray-400">
                                                 {new Date(msg.createdAt).toLocaleDateString()} {new Date(msg.createdAt).toLocaleTimeString()}
                                             </p>
@@ -248,11 +216,10 @@ function Discussion() {
                                     </div>
 
                                     {/* Action Buttons */}
-                                    {user?._id === msg.author && (
+                                    {user?._id === msg.author?._id && (
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => {
-                                                    handleUserActivity();
                                                     setEditingId(msg._id);
                                                     setEditingText(msg.message);
                                                 }}
@@ -262,10 +229,7 @@ function Discussion() {
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
-                                                onClick={() => {
-                                                    handleUserActivity();
-                                                    handleDeleteMessage(msg._id);
-                                                }}
+                                                onClick={() => handleDeleteMessage(msg._id)}
                                                 className="p-2 rounded-lg hover:bg-white/10 text-red-400 transition-colors"
                                                 title="Delete"
                                             >
@@ -280,19 +244,13 @@ function Discussion() {
                                     <div className="mb-3">
                                         <textarea
                                             value={editingText}
-                                            onChange={(e) => {
-                                                setEditingText(e.target.value);
-                                                handleUserActivity();
-                                            }}
+                                            onChange={(e) => setEditingText(e.target.value)}
                                             className="w-full p-3 rounded-lg bg-white/5 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none"
                                             rows="3"
                                         />
                                         <div className="flex gap-2 mt-3">
                                             <button
-                                                onClick={() => {
-                                                    handleUserActivity();
-                                                    handleUpdateMessage(msg._id);
-                                                }}
+                                                onClick={() => handleUpdateMessage(msg._id)}
                                                 className="px-4 py-2 rounded-lg font-bold text-white transition-all duration-300 text-sm"
                                                 style={{
                                                     background: 'linear-gradient(135deg, #a855f7, #f97316)'
@@ -302,7 +260,6 @@ function Discussion() {
                                             </button>
                                             <button
                                                 onClick={() => {
-                                                    handleUserActivity();
                                                     setEditingId(null);
                                                     setEditingText('');
                                                 }}
@@ -319,16 +276,13 @@ function Discussion() {
                                 {/* Like Button */}
                                 {editingId !== msg._id && (
                                     <button
-                                        onClick={() => {
-                                            handleUserActivity();
-                                            handleLikeMessage(msg._id);
-                                        }}
+                                        onClick={() => handleLikeMessage(msg._id)}
                                         className="flex items-center gap-2 text-gray-400 hover:text-red-400 transition-colors text-sm"
                                     >
                                         <Heart
                                             size={16}
-                                            fill={msg.likes?.includes(user?._id) ? 'currentColor' : 'none'}
-                                            className={msg.likes?.includes(user?._id) ? 'text-red-500' : ''}
+                                            fill={msg.likes?.some(id => id === user?._id || id._id === user?._id) ? 'currentColor' : 'none'}
+                                            className={msg.likes?.some(id => id === user?._id || id._id === user?._id) ? 'text-red-500' : ''}
                                         />
                                         <span>{msg.likes?.length || 0} likes</span>
                                     </button>

@@ -346,10 +346,6 @@ function Home() {
             }
             .company-card {
               animation: slideInLeft 0.6s ease-out forwards;
-              cursor: pointer;
-            }
-            .company-card * {
-              cursor: pointer !important;
             }
             .company-card-0 { animation-delay: 0s; }
             .company-card-1 { animation-delay: 0.1s; }
@@ -530,16 +526,10 @@ function Home() {
                 className={`
                   company-card company-card-${index}
                   rounded-2xl overflow-hidden
-                  group cursor-pointer transition-all duration-300
+                  group cursor-pointer
                   flex-shrink-0
                 `}
                 onClick={() => navigate(`/company/${company.name.toLowerCase()}`)}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.cursor = 'pointer';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.cursor = 'pointer';
-                }}
                 style={{
                   width: '380px',
                   backgroundColor: `${company.bgColor}80`,
@@ -551,11 +541,9 @@ function Home() {
                     ? `0 20px 40px rgba(168, 85, 247, 0.4), 0 0 ${20 * transform.scale}px ${company.color}40`
                     : `0 4px 6px rgba(0, 0, 0, 0.1)`,
                   transformStyle: 'preserve-3d',
-                  cursor: 'pointer',
-                  pointerEvents: 'auto',
                 }}
                 onMouseMove={handleMouseMove}
-                //onMouseLeave={handleMouseLeave}
+                onMouseLeave={handleMouseLeave}
               >
 
                 {/* Header with company name in rounded rectangle */}
@@ -682,8 +670,7 @@ function Home() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* DSA Path */}
             <div
-              onClick={() => window.open('https://roadmap.sh/datastructures-and-algorithms', '_blank')}
-              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105 hover:cursor-pointer"
+              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: 'rgba(168, 85, 247, 0.1)',
                 borderColor: 'rgba(168, 85, 247, 0.5)',
@@ -716,21 +703,21 @@ function Home() {
                     <span>Interview questions</span>
                   </div>
                 </div>
-                <div
-                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg text-center"
+                <button
+                  onClick={() => window.open('https://roadmap.sh/datastructures-and-algorithms', '_blank')}
+                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg"
                   style={{
                     background: 'linear-gradient(135deg, #a855f7, #a855f7)',
                   }}
                 >
                   Start Learning
-                </div>
+                </button>
               </div>
             </div>
 
-            {/* Frontend Card */}
+            {/* Frontend Path */}
             <div
-              onClick={() => window.open('https://roadmap.sh/frontend', '_blank')}
-              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105 hover:cursor-pointer"
+              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: 'rgba(249, 115, 22, 0.1)',
                 borderColor: 'rgba(249, 115, 22, 0.5)',
@@ -762,21 +749,21 @@ function Home() {
                     <span>Real-world projects</span>
                   </div>
                 </div>
-                <div
-                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg text-center"
+                <button
+                  onClick={() => window.open('https://roadmap.sh/frontend', '_blank')}
+                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg"
                   style={{
                     background: 'linear-gradient(135deg, #f97316, #f97316)',
                   }}
                 >
                   Start Learning
-                </div>
+                </button>
               </div>
             </div>
 
-            {/* Backend Card */}
+            {/* Backend Path */}
             <div
-              onClick={() => window.open('https://roadmap.sh/backend', '_blank')}
-              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105 hover:cursor-pointer"
+              className="relative group overflow-hidden rounded-xl backdrop-blur-sm border cursor-pointer transition-all duration-300 hover:scale-105"
               style={{
                 backgroundColor: 'rgba(168, 85, 247, 0.1)',
                 borderColor: 'rgba(168, 85, 247, 0.5)',
@@ -808,14 +795,15 @@ function Home() {
                     <span>REST & GraphQL APIs</span>
                   </div>
                 </div>
-                <div
-                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg text-center"
+                <button
+                  onClick={() => window.open('https://roadmap.sh/backend', '_blank')}
+                  className="w-full py-3 rounded-lg font-bold text-white transition-all duration-300 hover:shadow-lg"
                   style={{
                     background: 'linear-gradient(135deg, #a855f7, #a855f7)',
                   }}
                 >
                   Start Learning
-                </div>
+                </button>
               </div>
             </div>
           </div>
@@ -839,7 +827,7 @@ function Home() {
               boxShadow: '0 0 30px rgba(168, 85, 247, 0.5)'
             }}
           >
-            🚀 Start Your Journey Now
+             Start Your Journey Now
           </NavLink>
         </div>
       </section>

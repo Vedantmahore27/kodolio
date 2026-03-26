@@ -267,6 +267,7 @@ const ProblemPage = () => {
   const [loading, setLoading] = useState(false);
   const [runResult, setRunResult] = useState(null);
   const [submitResult, setSubmitResult] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
   const [activeLeftTab, setActiveLeftTab] = useState('description');
   const [activeRightTab, setActiveRightTab] = useState('testcase');
   const [selectedTestCase, setSelectedTestCase] = useState(0);
@@ -332,15 +333,30 @@ const ProblemPage = () => {
       setLoading(true);
       try {
         const response = await axiosClient.get(`/problem/getProblemById/${problemId}`);
-        const startCodeEntry = response.data.startCode?.find(
-          (sc) => sc.language === langMap[selectedLanguage]
+        const problemData = response.data;
+
+        // Fix startCode data structure if corrupted
+        const validLanguages = ["C++", "Java", "JavaScript"];
+        const fixedStartCode = (problemData.startCode && Array.isArray(problemData.startCode)) 
+          ? problemData.startCode.map((item, idx) => ({
+              language: item.language || validLanguages[idx] || "C++",
+              initialCode: item.initialCode || ""
+            }))
+          : [
+              { language: "C++", initialCode: "" },
+              { language: "Java", initialCode: "" },
+              { language: "JavaScript", initialCode: "" }
+            ];
+
+        const startCodeEntry = fixedStartCode.find(
+          (sc) => sc.language.toLowerCase() === langMap[selectedLanguage].toLowerCase()
         );
         
         // Try to restore saved code first
         const savedCode = localStorage.getItem(`code_${problemId}_${selectedLanguage}`);
         const initialCode = savedCode || startCodeEntry?.initialCode || '';
 
-        setProblem(response.data);
+        setProblem({ ...problemData, startCode: fixedStartCode });
         setCode(initialCode);
         setLoading(false);
       } catch (error) {
@@ -358,8 +374,21 @@ const ProblemPage = () => {
       if (savedCode) {
         setCode(savedCode);
       } else {
-        const startCodeEntry = problem.startCode?.find(
-          (sc) => sc.language === langMap[selectedLanguage]
+        // Fix startCode data structure if corrupted
+        const validLanguages = ["C++", "Java", "JavaScript"];
+        const fixedStartCode = (problem.startCode && Array.isArray(problem.startCode)) 
+          ? problem.startCode.map((item, idx) => ({
+              language: item.language || validLanguages[idx] || "C++",
+              initialCode: item.initialCode || ""
+            }))
+          : [
+              { language: "C++", initialCode: "" },
+              { language: "Java", initialCode: "" },
+              { language: "JavaScript", initialCode: "" }
+            ];
+
+        const startCodeEntry = fixedStartCode.find(
+          (sc) => sc.language.toLowerCase() === langMap[selectedLanguage].toLowerCase()
         );
         const initialCode = startCodeEntry?.initialCode || '';
         setCode(initialCode);
@@ -383,7 +412,7 @@ const ProblemPage = () => {
   const handleResetCode = () => {
     if (confirm('Are you sure you want to reset your code? This will discard all changes.')) {
       const startCodeEntry = problem.startCode?.find(
-        (sc) => sc.language === langMap[selectedLanguage]
+        (sc) => sc.language.toLowerCase() === langMap[selectedLanguage].toLowerCase()
       );
       const initialCode = startCodeEntry?.initialCode || '';
       setCode(initialCode);
@@ -574,10 +603,13 @@ const ProblemPage = () => {
       // Stop timer on successful submission
       if (accepted) {
         setIsTimerRunning(false);
+        setSuccessMessage('✅ Solution Submitted Successfully!');
         console.log("[SUBMISSION DEBUG] All tests passed! Triggering profile update.");
         console.log("[SUBMISSION DEBUG] Submission data:", data);
         // Trigger profile refresh event for Header to update streak
         window.dispatchEvent(new CustomEvent('profileUpdate'));
+        // Clear success message after 3 seconds
+        setTimeout(() => setSuccessMessage(''), 3000);
       } else {
         console.log("[SUBMISSION DEBUG] Some tests failed. Status:", data.status);
       }
@@ -711,6 +743,15 @@ const ProblemPage = () => {
           user-select: none;
         }
       `}</style>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 px-6 py-3 rounded-lg shadow-lg z-50 animate-pulse">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">{successMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* Left Panel - Problem Description */}
       <div className="flex flex-col border-r border-gray-800" style={{ width: `${leftWidth}%` }}>
@@ -1308,9 +1349,6 @@ const ProblemPage = () => {
                   </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                    </svg>
                     Submit
                   </>
                 )}

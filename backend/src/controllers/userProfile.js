@@ -20,7 +20,6 @@ function formatRelativeTime(dateValue) {
 
 function computeStreak(daySet) {
   if (!daySet.size) {
-    console.log("[STREAK] No submissions found, returning 0");
     return 0;
   }
   
@@ -29,8 +28,7 @@ function computeStreak(daySet) {
   const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
   const todayStr = today.toISOString().slice(0, 10);
   
-  console.log("[STREAK] Today's date (UTC):", todayStr);
-  console.log("[STREAK] Days in set:", Array.from(daySet).sort().reverse().slice(0, 10));
+
 
   let streak = 0;
   const cursor = new Date(today);
@@ -42,7 +40,6 @@ function computeStreak(daySet) {
   }
 
   if (streak > 0) {
-    console.log("[STREAK] Found streak starting from today:", streak);
     return streak;
   }
 
@@ -50,14 +47,12 @@ function computeStreak(daySet) {
   const yesterday = new Date(today);
   yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   const yesterdayStr = yesterday.toISOString().slice(0, 10);
-  console.log("[STREAK] No submission today, checking from yesterday:", yesterdayStr);
   
   while (daySet.has(yesterday.toISOString().slice(0, 10))) {
     streak += 1;
     yesterday.setUTCDate(yesterday.getUTCDate() - 1);
   }
 
-  console.log("[STREAK] Final calculated streak:", streak);
   return streak;
 }
 
@@ -66,7 +61,6 @@ function buildHeatmap(allSubmissions, year) {
   
   // Handle empty submissions array
   if (!allSubmissions || allSubmissions.length === 0) {
-    console.log("[HEATMAP] No submissions, returning empty heatmap for year:", year);
   } else {
     allSubmissions.forEach((submission) => {
       if (submission && submission.createdAt) {
@@ -114,7 +108,6 @@ function normalizeUrl(value) {
 
 const getProfile = async (req, res) => {
   try {
-    console.log("[PROFILE API] Fetching profile for user:", req.user._id);
     const userId = req.user._id;
     const year = parseInt(req.query.year) || new Date().getFullYear(); // Get year from query param, default to current year
 
@@ -128,9 +121,6 @@ const getProfile = async (req, res) => {
         .select("difficulty tags title")
         .lean(),
     ]);
-
-    console.log("[PROFILE API] User has", submissions.length, "total submissions");
-    console.log("[PROFILE API] User has solved", solvedProblems.length, "problems");
 
     const acceptedSubmissions = submissions.filter((submission) => submission.status === "accepted");
     const solvedByDifficulty = solvedProblems.reduce(
@@ -156,18 +146,7 @@ const getProfile = async (req, res) => {
     
     const currentStreak = computeStreak(daySet);
     
-    console.log("[STREAK DEBUG] Total submissions:", submissions.length);
-    console.log("[STREAK DEBUG] Accepted submissions count:", acceptedSubmissions.length);
-    console.log("[STREAK DEBUG] Recent accepted submissions:", 
-      acceptedSubmissions.slice(0, 5).map(s => ({ 
-        date: s.createdAt, 
-        dateStr: new Date(s.createdAt).toISOString().slice(0, 10),
-        problem: s.problemId?.title 
-      }))
-    );
-    console.log("[STREAK DEBUG] Unique days with submissions:", Array.from(daySet).sort().reverse());
-    console.log("[STREAK DEBUG] Calculated streak:", currentStreak);
-
+    
     const ratingBase = 1200;
     const rating = Math.min(3000, ratingBase + solvedCount * 2 + solvedByDifficulty.hard * 10 + acceptedSubmissions.length);
     const rank = Math.max(1, 50000 - rating * 10);
@@ -305,11 +284,7 @@ const getProfile = async (req, res) => {
         target: req.user.goalTarget || 500,
       },
     });
-    console.log("[PROFILE API] Profile sent successfully for user:", req.user._id);
   } catch (err) {
-    console.error("[PROFILE API] Error generating profile:", err);
-    console.error("[PROFILE API] User:", req.user._id);
-    console.error("[PROFILE API] Stack:", err.stack);
     return res.status(500).json({ success: false, error: err.message });
   }
 };

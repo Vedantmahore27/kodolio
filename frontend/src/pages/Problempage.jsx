@@ -255,9 +255,9 @@ const SubmissionDetails = ({ submission }) => {
 };
 
 const langMap = {
-  cpp: 'c++',
-  java: 'java',
-  javascript: 'javascript'
+  cpp: 'C++',
+  java: 'Java',
+  javascript: 'JavaScript'
 };
 
 const ProblemPage = () => {

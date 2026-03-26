@@ -9,7 +9,6 @@ const register = async(req,res)=>{
     try{
     // validate the data
     validate(req.body);
-    console.log(req.body);
     const{firstName, emailId , password} =req.body;
     const existingUser = await User.findOne({ emailId });
 
@@ -54,7 +53,6 @@ const login = async (req, res)=>{
         const {emailId , password,role}= req.body;
         if(!emailId) throw new Error("Invalid Credentials");
         if(!password) throw new Error("Invalid Credentials");
-        console.log(role)
         const user = await User.findOne({emailId});
          if (!user) return res.status(401).send("Invalid Credentials");
          if(user.role!= role){
@@ -72,7 +70,6 @@ const login = async (req, res)=>{
             _id : user._id,
             role : user.role
         }
-        console.log("role :" +user.role);
         const token =jwt.sign({_id:user._id,emailId:user.emailId, role:user.role},process.env.JWT_SECRET,{expiresIn : 60*60})
            
         res.cookie('token',token,{maxAge : 60*60*1000})
@@ -103,7 +100,6 @@ const logout =async (req,res)=>{
         const {token}=req.cookies;
     
         const payload = jwt.decode(token);
-         console.log(token)
         // remaining time of token
         
         await Redisclient.set(`token:${token}`, "blocked");

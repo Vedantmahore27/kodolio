@@ -26,15 +26,6 @@ const User = require("../models/user")
 
 
 const createProblem = async (req,res)=>{
-   console.log("[createProblem] Request received with data:", {
-     title: req.body.title,
-     hasVisibleTestCases: Array.isArray(req.body.visibleTestCases),
-     visibleTestCasesCount: req.body.visibleTestCases?.length,
-     hasReferenceSolution: Array.isArray(req.body.referenceSolution),
-     referenceSolutionCount: req.body.referenceSolution?.length,
-     company: req.body.company
-   });
-
   // API request to authenticate user:
     const {title,description,difficulty,tags,
         visibleTestCases,hiddenTestCases,startCode,
@@ -55,16 +46,6 @@ const createProblem = async (req,res)=>{
       }
        
       for(const {language,completeCode} of referenceSolution){
-        console.log(`[createProblem] Processing ${language}...`);
-        
-        // Log visibleTestCases structure
-        console.log("[createProblem] visibleTestCases type:", typeof visibleTestCases);
-        console.log("[createProblem] visibleTestCases is array:", Array.isArray(visibleTestCases));
-        console.log("[createProblem] visibleTestCases length:", visibleTestCases?.length);
-        if(visibleTestCases && visibleTestCases.length > 0){
-          console.log("[createProblem] First test case structure:", JSON.stringify(visibleTestCases[0], null, 2));
-        }
-
         // source_code:
         // language_id:
         // stdin: 
@@ -76,7 +57,6 @@ const createProblem = async (req,res)=>{
         let submissions;
         try {
           submissions = visibleTestCases.map((testcase) => {
-            console.log("[createProblem] Mapping testcase:", JSON.stringify(testcase, null, 2));
             return {
               source_code: normalize(completeCode),
               language_id: languageId,
@@ -85,8 +65,6 @@ const createProblem = async (req,res)=>{
             };
           });
         } catch (mapError) {
-          console.error("[createProblem] Error mapping visibleTestCases:", mapError.message);
-          console.error("[createProblem] visibleTestCases value:", visibleTestCases);
           return res.status(500).json({ 
             success: false, 
             message: "Error processing test cases: " + mapError.message 
@@ -97,7 +75,6 @@ const createProblem = async (req,res)=>{
         try {
           submitResult = await submitBatch(submissions);
         } catch (batchError) {
-          console.error("[createProblem] Error from submitBatch:", batchError.message);
           return res.status(500).json({ 
             success: false, 
             message: "Error submitting test cases: " + batchError.message 
@@ -105,27 +82,18 @@ const createProblem = async (req,res)=>{
         }
         
         if (!submitResult) {
-          console.error("[createProblem] submitBatch returned undefined");
           return res.status(500).json({ 
             success: false, 
             message: "Failed to submit batch test cases" 
           });
         }
 
-        console.log("[createProblem] submitResult received successfully");
-        console.log("[createProblem] submitResult type:", typeof submitResult);
-        console.log("[createProblem] submitResult is array:", Array.isArray(submitResult));
-        console.log("[createProblem] submitResult structure:", JSON.stringify(submitResult, null, 2).substring(0, 500));
-
         let resultToken;
         try {
           resultToken = submitResult.map((value)=> {
-            console.log("[createProblem] Extracting token from:", JSON.stringify(value, null, 2));
             return value.token;
           });
         } catch (mapError) {
-          console.error("[createProblem] Error mapping submitResult:", mapError.message);
-          console.error("[createProblem] submitResult value:", submitResult);
           return res.status(500).json({ 
             success: false, 
             message: "Error extracting tokens: " + mapError.message 
@@ -138,19 +106,13 @@ const createProblem = async (req,res)=>{
        try {
          testResult = await submitToken(resultToken);
        } catch (tokenError) {
-         console.error("[createProblem] Error from submitToken:", tokenError.message);
          return res.status(500).json({ 
            success: false, 
            message: "Error getting test results: " + tokenError.message 
          });
        }
 
-       console.log("[createProblem] testResult type:", typeof testResult);
-       console.log("[createProblem] testResult is array:", Array.isArray(testResult));
-       console.log("[createProblem] testResult:", testResult);
-
        if (!Array.isArray(testResult)) {
-         console.error("[createProblem] testResult is not an array:", testResult);
          return res.status(500).json({ 
            success: false, 
            message: "Invalid response from test submission" 
@@ -159,8 +121,6 @@ const createProblem = async (req,res)=>{
 
        for(const test of testResult){
         if(test.status.id!=3){
-          console.log(`[createProblem] Test failed:`, test.status);
-          
           const errorDetails = {
             status: test.status,
             stdout: test.stdout,
@@ -168,8 +128,6 @@ const createProblem = async (req,res)=>{
             message: test.message,
             compile_output: test.compile_output
           };
-          console.error("[createProblem] Test case failed:", errorDetails);
-          
           let errorMsg = "Reference solution test failed";
           if (test.status.description) {
             errorMsg += `. Status: ${test.status.description}`;
@@ -193,29 +151,14 @@ const createProblem = async (req,res)=>{
 
 
       // We can store it in our DB
-      console.log("[createProblem] Saving problem to database with data:", {
-        title: req.body.title,
-        company: req.body.company,
-        difficulty: req.body.difficulty,
-        tags: req.body.tags
-      });
-
-    const userProblem =  await problem.create({
+      const userProblem =  await problem.create({
         ...req.body,
         problemCreator: req.user._id
-      });
-
-      console.log("[createProblem] Problem saved successfully:", {
-        _id: userProblem._id,
-        company: userProblem.company,
-        title: userProblem.title
       });
 
       res.status(201).send("Problem Saved Successfully");
     }
     catch(err){
-        console.error("[createProblem] Error:", err);
-        const errorMsg = err.message || "Unknown error occurred";
         return res.status(500).json({
           success: false,
           message: "Error creating problem: " + errorMsg
@@ -224,16 +167,6 @@ const createProblem = async (req,res)=>{
 } 
 
 const updateProblem = async (req,res)=>{
-  console.log("[updateProblem] Request received with ID:", req.params.id);
-  console.log("[updateProblem] Request data:", {
-    title: req.body.title,
-    hasVisibleTestCases: Array.isArray(req.body.visibleTestCases),
-    visibleTestCasesCount: req.body.visibleTestCases?.length,
-    hasReferenceSolution: Array.isArray(req.body.referenceSolution),
-    referenceSolutionCount: req.body.referenceSolution?.length,
-    company: req.body.company
-  });
-    
   const {id} = req.params;
   const {title,description,difficulty,tags,
     visibleTestCases,hiddenTestCases,startCode,
@@ -262,7 +195,6 @@ const updateProblem = async (req,res)=>{
     }
       
     for(const {language,completeCode} of referenceSolution){
-      console.log(`[updateProblem] Processing ${language}...`);
       
       // source_code:
       // language_id:
@@ -275,18 +207,11 @@ const updateProblem = async (req,res)=>{
         }
       
       // Log visibleTestCases structure
-      console.log("[updateProblem] visibleTestCases type:", typeof visibleTestCases);
-      console.log("[updateProblem] visibleTestCases is array:", Array.isArray(visibleTestCases));
-      console.log("[updateProblem] visibleTestCases length:", visibleTestCases?.length);
-      if(visibleTestCases && visibleTestCases.length > 0){
-        console.log("[updateProblem] First test case structure:", JSON.stringify(visibleTestCases[0], null, 2));
-      }
       
       // I am creating Batch submission
       let submissions;
       try {
         submissions = visibleTestCases.map((testcase)=>{
-          console.log("[updateProblem] Mapping testcase:", JSON.stringify(testcase, null, 2));
           return {
             source_code: normalize(completeCode),
             language_id: languageId,
@@ -295,8 +220,6 @@ const updateProblem = async (req,res)=>{
           };
         });
       } catch (mapError) {
-        console.error("[updateProblem] Error mapping visibleTestCases:", mapError.message);
-        console.error("[updateProblem] visibleTestCases value:", visibleTestCases);
         return res.status(500).json({ 
           success: false, 
           message: "Error processing test cases: " + mapError.message 
@@ -308,7 +231,6 @@ const updateProblem = async (req,res)=>{
       try {
         submitResult = await submitBatch(submissions);
       } catch (batchError) {
-        console.error("[updateProblem] Error from submitBatch:", batchError.message);
         return res.status(500).json({ 
           success: false, 
           message: "Error submitting test cases: " + batchError.message 
@@ -316,27 +238,18 @@ const updateProblem = async (req,res)=>{
       }
       
       if (!submitResult) {
-        console.error("[updateProblem] submitBatch returned undefined");
         return res.status(500).json({ 
           success: false, 
           message: "Failed to submit batch test cases" 
         });
       }
-
-      console.log("[updateProblem] submitResult received successfully");
-      console.log("[updateProblem] submitResult type:", typeof submitResult);
-      console.log("[updateProblem] submitResult is array:", Array.isArray(submitResult));
-      console.log("[updateProblem] submitResult structure:", JSON.stringify(submitResult, null, 2).substring(0, 500));
       
       let resultToken;
       try {
         resultToken = submitResult.map((value)=> {
-          console.log("[updateProblem] Extracting token from:", JSON.stringify(value, null, 2));
           return value.token;
         });
       } catch (mapError) {
-        console.error("[updateProblem] Error mapping submitResult:", mapError.message);
-        console.error("[updateProblem] submitResult value:", submitResult);
         return res.status(500).json({ 
           success: false, 
           message: "Error extracting tokens: " + mapError.message 
@@ -349,19 +262,13 @@ const updateProblem = async (req,res)=>{
      try {
        testResult = await submitToken(resultToken);
      } catch (tokenError) {
-       console.error("[updateProblem] Error from submitToken:", tokenError.message);
        return res.status(500).json({ 
          success: false, 
          message: "Error getting test results: " + tokenError.message 
        });
      }
 
-    console.log("[updateProblem] Test results for language " + language + ":", testResult);
-    console.log("[updateProblem] testResult type:", typeof testResult);
-    console.log("[updateProblem] testResult is array:", Array.isArray(testResult));
-
     if (!Array.isArray(testResult)) {
-      console.error("[updateProblem] testResult is not an array:", testResult);
       return res.status(500).json({ 
         success: false, 
         message: "Invalid response from test submission" 
@@ -370,8 +277,6 @@ const updateProblem = async (req,res)=>{
 
      for(let i = 0; i < testResult.length; i++){
        const test = testResult[i];
-       console.log(`[updateProblem] Test case ${i+1} status:`, test.status);
-       console.log(`[updateProblem] Test case ${i+1} full response:`, JSON.stringify(test, null, 2));
        if(test.status.id!=3){
          const errorDetails = {
            testCaseIndex: i + 1,
@@ -381,7 +286,6 @@ const updateProblem = async (req,res)=>{
            message: test.message,
            compile_output: test.compile_output
          };
-         console.error("[updateProblem] Test case failed:", errorDetails);
          
          let errorMsg = `${language} reference solution failed at Test case ${i+1}`;
          if (test.status.description) {
@@ -404,20 +308,8 @@ const updateProblem = async (req,res)=>{
 
     }
 
-  console.log("[updateProblem] Updating problem with data:", {
-    id: id,
-    title: req.body.title,
-    company: req.body.company,
-    difficulty: req.body.difficulty
-  });
-
   const newProblem = await problem.findByIdAndUpdate(id , {...req.body}, {runValidators:true, new:true});
    
-  console.log("[updateProblem] Successfully updated problem:", {
-    _id: newProblem._id,
-    company: newProblem.company,
-    title: newProblem.title
-  });
   return res.status(200).json({
     success: true,
     message: "Problem updated successfully",
@@ -425,7 +317,6 @@ const updateProblem = async (req,res)=>{
   });
   }
   catch(err){
-      console.error("[updateProblem] Error:", err);
       return res.status(500).json({
         success: false,
         message: "Error updating problem: " + err.message,
@@ -448,7 +339,6 @@ const deleteProblem = async(req,res)=>{
     return res.status(200).json({ message: "Problem deleted successfully" });
 
   } catch (error) {
-    console.error("Delete Problem Error:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -468,7 +358,6 @@ const getProblemById= async(req,res)=>{
        return res.status(200).send(dsaProblem);
    }
    catch(err){
-    console.error("getProblemById error:", err);
     return res.status(500).send("Error fetching problem: " + err.message);
    }
 }
@@ -488,7 +377,6 @@ try{
   });
 }
 catch(err){
-  console.error("getAllProblem error:", err);
   return res.status(500).send("Error fetching problems: " + err.message);
 }
 }
@@ -554,7 +442,6 @@ const getProblemsByCompany = async(req,res)=>{
     });
   }
   catch(err){
-    console.error("getProblemsByCompany error:", err);
     return res.status(500).send("Error fetching problems: " + err.message);
   }
 }

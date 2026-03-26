@@ -27,6 +27,16 @@ function ProblemPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
+const fetchSolvedProblems = async () => {
+  if (!user) return;
+  try {
+    const { data } = await axiosClient.get('/problem/problemSolvedByUser');
+    setSolvedProblems(data.solvedProblem || []);
+  } catch (error) {
+    console.error(error);
+  }
+};
+
 useEffect(() => {
   const fetchProblems = async () => {
     try {
@@ -37,17 +47,30 @@ useEffect(() => {
     }
   };
 
-  const fetchSolvedProblems = async () => {
-    try {
-      const { data } = await axiosClient.get('/problem/problemSolvedByUser');
-      setSolvedProblems(data.solved || []);
-    } catch (error) {
-      console.error(error);
+  fetchProblems();
+  if (user) fetchSolvedProblems();
+}, [user]);
+
+// Listen for profile updates (when a problem is solved)
+useEffect(() => {
+  const handleProfileUpdate = () => {
+    fetchSolvedProblems();
+  };
+
+  // Also fetch on page visibility change (when tab/window comes to focus)
+  const handleVisibilityChange = () => {
+    if (!document.hidden && user) {
+      fetchSolvedProblems();
     }
   };
 
-  fetchProblems();
-  if (user) fetchSolvedProblems();
+  window.addEventListener('profileUpdate', handleProfileUpdate);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+
+  return () => {
+    window.removeEventListener('profileUpdate', handleProfileUpdate);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
+  };
 }, [user]);
 
 

@@ -37,20 +37,20 @@ function App(){
   return(
     <>
     <Routes> 
-     <Route path="/" element={isAuthenticated?<Homepage></Homepage>:<Navigate to="/signup"/>}> </Route> 
+     <Route path="/" element={<Homepage></Homepage>}> </Route> 
     
-    <Route path="/Problems" element={isAuthenticated?<ProblemPage></ProblemPage>:<Navigate to="/signup"/>}></Route>   
-    <Route path="/contest" element={isAuthenticated?<Contest></Contest>:<Navigate to="/signup"/>}></Route>
-    <Route path="/contests" element={isAuthenticated?<Contest></Contest>:<Navigate to="/signup"/>}></Route>
-    <Route path="/discussion" element={isAuthenticated?<Discussion></Discussion>:<Navigate to="/signup"/>}></Route>
-    <Route path="/company/:company" element={isAuthenticated?<CompanyProblems></CompanyProblems>:<Navigate to="/signup"/>}></Route>
+    <Route path="/Problems" element={isAuthenticated?<ProblemPage></ProblemPage>:<Navigate replace to="/signup"/>}></Route>   
+    <Route path="/contest" element={isAuthenticated?<Contest></Contest>:<Navigate replace to="/signup"/>}></Route>
+    <Route path="/contests" element={isAuthenticated?<Contest></Contest>:<Navigate replace to="/signup"/>}></Route>
+    <Route path="/discussion" element={isAuthenticated?<Discussion></Discussion>:<Navigate replace to="/signup"/>}></Route>
+    <Route path="/company/:company" element={isAuthenticated?<CompanyProblems></CompanyProblems>:<Navigate replace to="/signup"/>}></Route>
     <Route path="/login" element={<Login></Login>}></Route> 
     <Route path="/signup" element={<Signup></Signup>}></Route> 
-    <Route path="/admin" element={isAuthenticated && user?.role === "admin" ? <Admin></Admin> : <Navigate to="/"/>}> </Route>
-    <Route path="/admin/create" element={isAuthenticated && user?.role === "admin" ? <CreateProblem></CreateProblem> : <Navigate to="/"/>}> </Route>
-    <Route path="/admin/update/:id" element={isAuthenticated && user?.role === "admin" ? <UpdateProblem></UpdateProblem> : <Navigate to="/"/>}> </Route>
-    <Route path="/admin/update" element={isAuthenticated && user?.role === "admin" ? <AdminUpdate></AdminUpdate> : <Navigate to="/"/>}> </Route>
-    <Route path="/admin/delete" element={isAuthenticated && user?.role === "admin" ? <AdminDelete></AdminDelete> : <Navigate to="/"/>}> </Route>
+    <Route path="/admin" element={isAuthenticated && user?.role === "admin" ? <Admin></Admin> : <Navigate replace to="/"/>}> </Route>
+    <Route path="/admin/create" element={isAuthenticated && user?.role === "admin" ? <CreateProblem></CreateProblem> : <Navigate replace to="/"/>}> </Route>
+    <Route path="/admin/update/:id" element={isAuthenticated && user?.role === "admin" ? <UpdateProblem></UpdateProblem> : <Navigate replace to="/"/>}> </Route>
+    <Route path="/admin/update" element={isAuthenticated && user?.role === "admin" ? <AdminUpdate></AdminUpdate> : <Navigate replace to="/"/>}> </Route>
+    <Route path="/admin/delete" element={isAuthenticated && user?.role === "admin" ? <AdminDelete></AdminDelete> : <Navigate replace to="/"/>}> </Route>
     <Route path="/problem/:problemId" element={<Problempage></Problempage>}></Route>
     <Route path="/profile" element={<Profile></Profile>}></Route>
 

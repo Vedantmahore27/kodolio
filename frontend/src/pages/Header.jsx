@@ -136,14 +136,14 @@ console.log("HEADER role:", user?.role);
 console.log("HEADER userProfile:", userProfile);
   return (
     <header className="relative z-20 backdrop-blur-md bg-purple-950/20 border-b border-purple-500/20">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center h-16 ">
+      <nav className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="flex items-center h-14 sm:h-16">
 
           {/* Logo */}
           <NavLink to="/" className="flex items-center gap-3">
             <img
               src={logo}
-              className="w-40 h-auto object-contain hover:drop-shadow-[0_0_20px_rgba(168,85,247,0.9)] transition-all duration-300"
+              className="w-24 sm:w-32 md:w-40 h-auto object-contain hover:drop-shadow-[0_0_20px_rgba(168,85,247,0.9)] transition-all duration-300"
               alt="logo"
             />
           </NavLink>
@@ -152,7 +152,7 @@ console.log("HEADER userProfile:", userProfile);
           <div className="hidden md:flex items-center w-full">
 
             {/* Left Navigation Links */}
-            <div className="flex items-center space-x-12 ml-70">
+            <div className="flex items-center space-x-6 lg:space-x-12 ml-auto lg:ml-70">
               <NavLink
                  to="/problems"
                  className={({ isActive }) =>
@@ -210,7 +210,7 @@ console.log("HEADER userProfile:", userProfile);
             </div>
            
             {/* Right Side */}
-            <div className="flex items-center ml-50">
+            <div className="flex items-center ml-auto lg:ml-50">
                 {isAuthenticated && user?.role === "admin" && (
                    <>
                    <NavLink
@@ -231,21 +231,21 @@ console.log("HEADER userProfile:", userProfile);
                   )}
              </div>
 
-            <div className="ml-auto relative flex items-center">
+            <div className="ml-auto relative flex items-center gap-1.5 md:gap-2 lg:gap-3 pl-2 sm:pl-3 md:pl-4 lg:pl-6">
               {isAuthenticated ? (
                 <>
                   {/* Streak Indicator */}
-                  <div className={`inline-flex items-center gap-1.5 mr-3 px-3 py-1.5 rounded-full border transition-all ${
+                  <div className={`hidden sm:inline-flex items-center gap-1.5 mr-2 md:mr-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full border transition-all text-xs md:text-sm ${
                     (userProfile?.streak && userProfile.streak > 0) 
                       ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
                       : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
                   }`}>
-                    <Flame size={16} className={
+                    <Flame size={14} className={
                       (userProfile?.streak && userProfile.streak > 0)
                         ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
                         : 'text-slate-600'
                     } />
-                    <span className="text-sm font-semibold">
+                    <span className="text-xs md:text-sm font-semibold">
                       {userProfile?.streak || 0}
                     </span>
                   </div>
@@ -294,15 +294,30 @@ console.log("HEADER userProfile:", userProfile);
               <>
                 <NavLink
                   to="/login"
-                  className="px-6 py-1 rounded-lg font-semibold text-purple-400 border-2 border-orange-400 hover:bg-orange-400/20 transition-all duration-300"
+                  className="px-2.5 sm:px-3 md:px-4 py-1 md:py-1.5 rounded-lg font-medium transition-all text-purple-400 border border-purple-900/40 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 hover:text-purple-300 text-xs sm:text-sm"
+                  style={{
+                    textShadow: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textShadow = '0 0 8px rgba(168, 85, 247, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
                 >
                   Login
                 </NavLink>
                 <NavLink
                   to="/signup"
-                  className="px-5 py-1 rounded-lg font-semibold text-orange-400 border-2 border-purple-400 hover:bg-purple-400/20 transition-all duration-300 ml-5"
+                  className="px-2.5 sm:px-3 md:px-4 py-1 md:py-1.5 rounded-lg font-medium transition-all text-orange-400 border border-orange-900/40 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/50 hover:scale-105 hover:text-orange-300 text-xs sm:text-sm"
                   style={{
-                    boxShadow: '0 4px 15px rgba(168, 85, 247, 0.3)'
+                    textShadow: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textShadow = '0 0 8px rgba(249, 115, 22, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textShadow = 'none';
                   }}
                 >
                   Sign Up
@@ -405,22 +420,40 @@ console.log("HEADER userProfile:", userProfile);
                 </button>
               </>
             ) : (
-              <>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5">
                 <NavLink
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block text-center text-purple-400 font-semibold"
+                  className="px-3 py-1.5 rounded-lg font-medium text-purple-400 border border-purple-900/40 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/50 hover:scale-105 hover:text-purple-300 transition-all text-sm text-center"
+                  style={{
+                    textShadow: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textShadow = '0 0 8px rgba(168, 85, 247, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
                 >
                   Login
                 </NavLink>
                 <NavLink
                   to="/signup"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block text-center text-orange-400 font-semibold"
+                  className="px-3 py-1.5 rounded-lg font-medium text-orange-400 border border-orange-900/40 hover:border-orange-400 hover:shadow-lg hover:shadow-orange-500/50 hover:scale-105 hover:text-orange-300 transition-all text-sm text-center"
+                  style={{
+                    textShadow: 'none'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.textShadow = '0 0 8px rgba(249, 115, 22, 0.8)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.textShadow = 'none';
+                  }}
                 >
                   Sign Up
                 </NavLink>
-              </>
+              </div>
             )}
           </div>
         )}

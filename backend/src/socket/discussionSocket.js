@@ -30,8 +30,6 @@ const getUserFromSocket = async (socket) => {
 
 module.exports = (io) => {
     io.on("connection", (socket) => {
-        console.log("New user connected:", socket.id);
-
         // Join discussion room
         socket.on("join_discussion", async () => {
             socket.join("discussion");
@@ -185,7 +183,6 @@ module.exports = (io) => {
 
         // Disconnect handler
         socket.on("disconnect", () => {
-            console.log("User disconnected:", socket.id);
         });
     });
 };

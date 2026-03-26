@@ -3,10 +3,21 @@ const Submission = require("../models/submission");
 const { getLanguageById, submitBatch, submitToken } = require("../utils/problem");
 const User = require("../models/user");
 
+// Convert language names to lowercase for database storage
+const normalizeLanguage = (language) => {
+  const languageMap = {
+    'C++': 'c++',
+    'Java': 'java',
+    'JavaScript': 'javascript',
+    'c++': 'c++',
+    'java': 'java',
+    'javascript': 'javascript'
+  };
+  return languageMap[language] || language.toLowerCase();
+};
 
 const submitCode = async (req, res) => {
   try {
-    console.log("submit called")
     const userId = req.user._id;
     const problemId = req.params.id;
     const { code, language } = req.body;
@@ -14,6 +25,9 @@ const submitCode = async (req, res) => {
     if (!userId || !code || !language) {
       return res.status(400).send("some field missing");
     }
+
+    // Normalize language to lowercase
+    const normalizedLanguage = normalizeLanguage(language);
 
     // fetch problem
     const Problem = await problem.findById(problemId);
@@ -27,14 +41,14 @@ const submitCode = async (req, res) => {
       userId,
       problemId,
       code,
-      language,
+      language: normalizedLanguage,
       status: "pending",
       testCasesPassed: 0,
       testCasesTotal: Problem.hiddenTestCases.length
     });
 
     // send to judge0
-    const languageId = getLanguageById(language);
+    const languageId = getLanguageById(normalizedLanguage);
 
     if (!languageId) {
       return res.status(400).send("Invalid language");
@@ -79,17 +93,6 @@ const submitCode = async (req, res) => {
 
     await submittedResult.save();
     
-    console.log("[SUBMISSION DEBUG] Submission saved!");
-    console.log("[SUBMISSION DEBUG] Status:", status);
-    console.log("[SUBMISSION DEBUG] Test cases:", testCasesPassed, "/", Problem.hiddenTestCases.length);
-    console.log("[SUBMISSION DEBUG] All tests passed:", testCasesPassed === Problem.hiddenTestCases.length);
-    console.log("[SUBMISSION DEBUG] Created at (raw):", submittedResult.createdAt);
-    console.log("[SUBMISSION DEBUG] Created at (UTC date):", new Date(submittedResult.createdAt).toISOString().slice(0, 10));
-    console.log("[SUBMISSION DEBUG] Current UTC date:", new Date().toISOString().slice(0, 10));
-
-    //abhi hame check karna hai current problem is already solved or we have to solve
-    // problemId ko inset karo problem solved me 
-
     if(!req.user.problemSolved.includes(problemId)){
         await req.user.problemSolved.push(problemId);
         await req.user.save();
@@ -100,7 +103,6 @@ const submitCode = async (req, res) => {
     res.status(201).json(submittedResult.toObject());
 
   } catch (err) {
-    console.log(err);
     res.status(500).send(err.message);
   }
 };
@@ -194,7 +196,6 @@ const runCode = async (req, res) => {
     res.status(201).json(testResult);
 
   } catch (err) {
-    console.log(err);
     res.status(500).send(err.message);
   }
 }
@@ -219,7 +220,6 @@ const getSubmissions = async (req, res) => {
 
     res.status(200).json(submissions);
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: err.message });
   }
 };
@@ -246,7 +246,6 @@ const getSubmissionById = async (req, res) => {
 
     res.status(200).json(submission);
   } catch (err) {
-    console.log(err);
     res.status(500).json({ error: err.message });
   }
 };

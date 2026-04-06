@@ -14,6 +14,7 @@ function ProblemPage() {
   const { user } = useSelector((state) => state.auth);
   const [problems, setProblems] = useState([]);
   const [solvedProblems, setSolvedProblems] = useState([]);
+  const [apiError, setApiError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     difficulty: 'all',
@@ -42,10 +43,14 @@ const fetchSolvedProblems = async () => {
 useEffect(() => {
   const fetchProblems = async () => {
     try {
+      setApiError(null);
       const { data } = await axiosClient.get('/problem/getAllProblem');
       setProblems(data.problems || []);
     } catch (error) {
-      console.error(error);
+      const errorMsg = error.response?.data?.error || error.message;
+      setApiError(errorMsg);
+      console.error('Error fetching problems:', errorMsg);
+      console.error('Full error:', error);
     }
   };
 
@@ -105,6 +110,13 @@ useEffect(() => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-4">
+        {/* Error Banner */}
+        {apiError && (
+          <div className="mb-6 p-4 rounded-lg bg-red-500/20 border border-red-500/50 text-red-300">
+            <p className="font-semibold">⚠️ Error loading problems</p>
+            <p className="text-sm">{apiError}</p>
+          </div>
+        )}
         {/* Enhanced Filter Section */}
       <div className="mb-8 p-6 rounded-2xl backdrop-blur-sm border transition-all duration-300"
         style={{

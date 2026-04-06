@@ -26,7 +26,7 @@ const register = async(req,res)=>{
             _id : user._id,
             role : user.role
         }
-    res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'lax'})
+    res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'none'})
   
     res.status(201).json({
             user:reply,
@@ -72,7 +72,7 @@ const login = async (req, res)=>{
         }
         const token =jwt.sign({_id:user._id,emailId:user.emailId, role:user.role},process.env.JWT_SECRET,{expiresIn : 60*60})
            
-        res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'lax'})
+        res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'none'})
         res.status(200).json({
             user:reply,
             message:"Login Successful"
@@ -117,7 +117,7 @@ const logout =async (req,res)=>{
         res.clearCookie("token", {
             httpOnly: true, 
             secure: true, 
-            sameSite: 'lax'
+            sameSite: 'none'
         });
         res.status(200).send("Logged out successfully");
 
@@ -139,7 +139,7 @@ const adminRegister = async(req,res)=>{
     const user = await User.create(req.body);
     const token =jwt.sign({_id:user._id,emailId:user.emailId,role:user.role},process.env.JWT_SECRET,{expiresIn : 60*60})
      
-    res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'lax'})
+    res.cookie('token',token,{maxAge : 60*60*1000, httpOnly: true, secure: true, sameSite: 'none'})
     res.status(201).send("Admin Created Successfully")
    
     }

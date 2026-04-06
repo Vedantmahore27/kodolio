@@ -25,6 +25,15 @@ const HeaderPage = () => {
       return null;
     }
   });
+  const [cachedStreak, setCachedStreak] = useState(() => {
+    // Initialize cached streak from localStorage
+    try {
+      const cached = localStorage.getItem('userStreakCache');
+      return cached ? parseInt(cached, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const fetchInProgressRef = useRef(false);
   const isMountedRef = useRef(true);
 
@@ -53,6 +62,18 @@ const HeaderPage = () => {
       if (isMountedRef.current && res.data?.success && res.data?.profile) {
         console.log("[HEADER] Setting userProfile:", res.data.profile);
         setUserProfile(res.data.profile);
+        
+        // Cache streak to localStorage for persistence across navigation
+        if (res.data.profile.streak !== undefined) {
+          console.log("[HEADER] Caching streak:", res.data.profile.streak);
+          setCachedStreak(res.data.profile.streak);
+          try {
+            localStorage.setItem('userStreakCache', res.data.profile.streak.toString());
+          } catch (e) {
+            console.log("[HEADER] Could not save streak to localStorage:", e);
+          }
+        }
+        
         // Cache avatar URL to prevent flickering on navigation
         if (res.data.profile.avatar) {
           console.log("[HEADER] Setting cachedAvatar to:", res.data.profile.avatar);
@@ -99,6 +120,18 @@ const HeaderPage = () => {
           if (isMountedRef.current && res.data?.success && res.data?.profile) {
             console.log("[HEADER] New profile data:", res.data.profile);
             setUserProfile(res.data.profile);
+            
+            // Cache streak to localStorage for persistence across navigation
+            if (res.data.profile.streak !== undefined) {
+              console.log("[HEADER] Caching updated streak:", res.data.profile.streak);
+              setCachedStreak(res.data.profile.streak);
+              try {
+                localStorage.setItem('userStreakCache', res.data.profile.streak.toString());
+              } catch (e) {
+                console.log("[HEADER] Could not save streak to localStorage:", e);
+              }
+            }
+            
             // Always update cachedAvatar with the latest avatar from server
             if (res.data.profile.avatar) {
               console.log("[HEADER] Setting cachedAvatar to:", res.data.profile.avatar);
@@ -235,18 +268,18 @@ console.log("HEADER userProfile:", userProfile);
               {isAuthenticated ? (
                 <>
                   {/* Streak Indicator */}
-                  <div className={`hidden sm:inline-flex items-center gap-1.5 mr-2 md:mr-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full border transition-all text-xs md:text-sm ${
-                    (userProfile?.streak && userProfile.streak > 0) 
+                  <div className={`hidden sm:inline-flex items-center gap-1.5 mr-2 md:mr-3 px-2 md:px-3 py-1 md:py-1.5 rounded-full border text-xs md:text-sm ${
+                    (cachedStreak && cachedStreak > 0) 
                       ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
                       : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
                   }`}>
                     <Flame size={14} className={
-                      (userProfile?.streak && userProfile.streak > 0)
+                      (cachedStreak && cachedStreak > 0)
                         ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
                         : 'text-slate-600'
                     } />
-                    <span className="text-xs md:text-sm font-semibold">
-                      {userProfile?.streak || 0}
+                    <span className="text-xs md:text-sm font-semibold tabular-nums">
+                      {cachedStreak || 0}
                     </span>
                   </div>
 
@@ -331,18 +364,18 @@ console.log("HEADER userProfile:", userProfile);
           <div className="md:hidden ml-auto flex items-center gap-2">
             {/* Mobile Streak Indicator (visible in header) */}
             {isAuthenticated && (
-              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border transition-all ${
-                (userProfile?.streak && userProfile.streak > 0) 
+              <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${
+                (cachedStreak && cachedStreak > 0) 
                   ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
                   : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
               }`}>
                 <Flame size={14} className={
-                  (userProfile?.streak && userProfile.streak > 0)
+                  (cachedStreak && cachedStreak > 0)
                     ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
                     : 'text-slate-600'
                 } />
-                <span className="text-xs font-semibold">
-                  {userProfile?.streak || 0}
+                <span className="text-xs font-semibold tabular-nums">
+                  {cachedStreak || 0}
                 </span>
               </div>
             )}
@@ -386,18 +419,18 @@ console.log("HEADER userProfile:", userProfile);
             {isAuthenticated ? (
               <>
                 {/* Streak Indicator - Mobile */}
-                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border transition-all ${
-                  (userProfile?.streak && userProfile.streak > 0) 
+                <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border ${
+                  (cachedStreak && cachedStreak > 0) 
                     ? 'bg-linear-to-r from-orange-500/20 to-amber-500/20 border-orange-400/50 text-orange-300 shadow-[0_0_10px_rgba(249,115,22,0.3)]' 
                     : 'bg-slate-800/40 border-slate-600/30 text-slate-500'
                 }`}>
                   <Flame size={18} className={
-                    (userProfile?.streak && userProfile.streak > 0)
+                    (cachedStreak && cachedStreak > 0)
                       ? 'text-orange-400 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)]'
                       : 'text-slate-600'
                   } />
-                  <span className="text-sm font-semibold">
-                    {userProfile?.streak || 0} Day Streak
+                  <span className="text-sm font-semibold tabular-nums">
+                    {cachedStreak || 0} Day Streak
                   </span>
                 </div>
 

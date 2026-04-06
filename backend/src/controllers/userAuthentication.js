@@ -102,8 +102,17 @@ const logout =async (req,res)=>{
         const payload = jwt.decode(token);
         // remaining time of token
         
-        await Redisclient.set(`token:${token}`, "blocked");
-        await Redisclient.expireAt(`token:${token}`, payload.exp);
+        // Add to Redis blocklist with error handling
+        try {
+            if (Redisclient.isOpen) {
+                await Redisclient.set(`token:${token}`, "blocked");
+                await Redisclient.expireAt(`token:${token}`, payload.exp);
+                console.log("[AUTH] Token added to blocklist");
+            }
+        } catch (redisErr) {
+            console.error("[AUTH] Redis error during logout:", redisErr.message);
+            // Continue anyway - token is cleared from client
+        }
        
         res.clearCookie("token");
         res.status(200).send("Logged out successfully");

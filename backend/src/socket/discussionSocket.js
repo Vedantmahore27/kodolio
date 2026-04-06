@@ -15,21 +15,32 @@ const getUserFromSocket = async (socket) => {
         
         const token = tokenMatch[1];
         
-        // Check if token is blocked
-        const isBlocked = await Redisclient.exists(`token:${token}`);
-        if (isBlocked) return null;
+        // Check if token is blocked (with Redis error handling)
+        try {
+            if (Redisclient.isOpen) {
+                const isBlocked = await Redisclient.exists(`token:${token}`);
+                if (isBlocked) return null;
+            } else {
+                console.log("[Socket] Redis not available, skipping token block check");
+            }
+        } catch (redisErr) {
+            console.error("[Socket] Redis error during token check:", redisErr.message);
+            // Continue without Redis - don't block the connection
+        }
         
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded._id);
         return user;
     } catch (err) {
-        console.error("Socket auth error:", err.message);
+        //console.error("Socket auth error:", err.message);
         return null;
     }
 };
 
 module.exports = (io) => {
     io.on("connection", (socket) => {
+       // console.log("New user connected:", socket.id);
+
         // Join discussion room
         socket.on("join_discussion", async () => {
             socket.join("discussion");
@@ -183,6 +194,7 @@ module.exports = (io) => {
 
         // Disconnect handler
         socket.on("disconnect", () => {
+          //  console.log("User disconnected:", socket.id);
         });
     });
 };

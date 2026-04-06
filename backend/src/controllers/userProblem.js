@@ -151,8 +151,22 @@ const createProblem = async (req,res)=>{
 
 
       // We can store it in our DB
-      const userProblem =  await problem.create({
+      // Normalize startCode before saving
+      const validLanguages = ["C++", "Java", "JavaScript"];
+      const normalizedStartCode = (req.body.startCode && Array.isArray(req.body.startCode))
+        ? req.body.startCode.map((item, idx) => ({
+            language: item.language || validLanguages[idx] || "C++",
+            initialCode: item.initialCode || ""
+          }))
+        : [
+            { language: "C++", initialCode: "" },
+            { language: "Java", initialCode: "" },
+            { language: "JavaScript", initialCode: "" }
+          ];
+
+      const userProblem = await problem.create({
         ...req.body,
+        startCode: normalizedStartCode,
         problemCreator: req.user._id
       });
 
@@ -308,7 +322,20 @@ const updateProblem = async (req,res)=>{
 
     }
 
-  const newProblem = await problem.findByIdAndUpdate(id , {...req.body}, {runValidators:true, new:true});
+    // Normalize startCode before updating
+    const validLanguages = ["C++", "Java", "JavaScript"];
+    const normalizedStartCode = (req.body.startCode && Array.isArray(req.body.startCode))
+      ? req.body.startCode.map((item, idx) => ({
+          language: item.language || validLanguages[idx] || "C++",
+          initialCode: item.initialCode || ""
+        }))
+      : [
+          { language: "C++", initialCode: "" },
+          { language: "Java", initialCode: "" },
+          { language: "JavaScript", initialCode: "" }
+        ];
+
+   const newProblem = await problem.findByIdAndUpdate(id , {...req.body, startCode: normalizedStartCode}, {runValidators:true, new:true});
    
   return res.status(200).json({
     success: true,

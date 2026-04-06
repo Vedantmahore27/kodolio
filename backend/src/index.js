@@ -41,19 +41,25 @@ require("./socket/discussionSocket")(io);
 
 const InitializeConnection = async () => {
   try {
-    await Promise.all([
-      main(),
-      Redisclient.connect()
-    ]);
+    await main();
+    console.log("MongoDB Connected");
 
-    console.log("DB Connected");
+    // Try to connect Redis, but don't fail if it doesn't connect
+    try {
+      await Redisclient.connect();
+      console.log("Redis Connected");
+    } catch (redisErr) {
+      console.error("Redis connection failed (app will continue without Redis):", redisErr.message);
+      // Continue without Redis - the app can function without it
+    }
 
     server.listen(process.env.PORT, () => {
       console.log("Server listening at port number " + process.env.PORT);
     });
   }
   catch (err) {
-    console.log("Error" + err);
+    console.log("Fatal error during initialization:", err);
+    process.exit(1);
   }
 }
 

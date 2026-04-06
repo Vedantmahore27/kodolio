@@ -18,10 +18,16 @@ const userMiddleware = async (req,res,next)=>{
 
          if(!user) throw new Error("User Doesn't Exists");
 
-         //redis me check karo present hai kya
-
-         const isBlocked = await Redisclient.exists(`token:${token}`);
-         if(isBlocked) throw new Error("Invalid Token");
+         //redis me check karo present hai kya (with error handling)
+         try {
+            if (Redisclient.isOpen) {
+                const isBlocked = await Redisclient.exists(`token:${token}`);
+                if(isBlocked) throw new Error("Invalid Token");
+            }
+         } catch (redisErr) {
+            console.error("[MIDDLEWARE] Redis error during token check:", redisErr.message);
+            // Continue without Redis check - don't block the user
+         }
 
          req.user=user;
 

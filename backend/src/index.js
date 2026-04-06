@@ -14,7 +14,8 @@ const io = new Server(server, {
     origin:['http://localhost:5173',
     "https://kodolio.vercel.app"],
     credentials: true,
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type']
   }
 });
 
@@ -29,7 +30,9 @@ app.use(cors({
     "http://localhost:5173",
     "https://kodolio.vercel.app"
   ],
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
 app.use(express.json());

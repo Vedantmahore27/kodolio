@@ -11,7 +11,12 @@ import contest from "../assets/contest.png"
 import discussion from "../assets/discussion.png"
 import admin from "../assets/admin.png"
 
-
+// Generate default avatar if none available
+const getDefaultAvatar = (user) => {
+  if (!user || !user.emailId) return image;
+  const seed = encodeURIComponent(user?.firstName || user?.emailId?.split('@')[0] || 'user');
+  return `https://api.dicebear.com/9.x/lorelei/svg?seed=${seed}`;
+};
 
 const HeaderPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -290,13 +295,13 @@ console.log("HEADER userProfile:", userProfile);
                     title="Profile menu"
                   >
                     <img
-                      key={cachedAvatar || userProfile?.avatar || 'default'}
-                      src={cachedAvatar || userProfile?.avatar || image}
+                      key={cachedAvatar || userProfile?.avatar || getDefaultAvatar(user)}
+                      src={cachedAvatar || userProfile?.avatar || getDefaultAvatar(user)}
                       alt="profile"
                       onError={(e) => {
                         // Fallback if avatar URL is broken
-                        console.log("[HEADER] Avatar image failed to load, using fallback");
-                        e.target.src = image;
+                        console.log("[HEADER] Avatar image failed to load, using default");
+                        e.target.src = getDefaultAvatar(user);
                       }}
                       className="w-full h-full object-cover"
                       style={{ backgroundColor: '#4c1d95' }}

@@ -18,7 +18,7 @@ function Discussion() {
 
     // Initialize socket connection
     useEffect(() => {
-        socketRef.current = io('http://localhost:3000', {
+        socketRef.current = io('https://kodolio-backend.onrender.com', {
             withCredentials: true
         });
 

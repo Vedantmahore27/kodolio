@@ -25,7 +25,10 @@ const discussionRouter = require("./routes/discussion")
 const cors = require('cors')
 
 app.use(cors({
-  origin: 'https://kodolio.vercel.app',
+   origin: [
+    "http://localhost:5173",
+    "https://kodolio.vercel.app"
+  ],
   credentials: true
 }))
 

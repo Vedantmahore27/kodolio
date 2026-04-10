@@ -148,9 +148,11 @@ function Signup() {
               </div>
 
               {/* Backend Error */}
-             <p className="text-red-500 text-sm mt-3 text-center min-h-[20px]">
-              {error || " "}
-             </p>
+              {error && (
+                <p className="text-red-500 text-sm mt-3 text-center">
+                  {error}
+                </p>
+              )}
 
 
               {/* Submit */}

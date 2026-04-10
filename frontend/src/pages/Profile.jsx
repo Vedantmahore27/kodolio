@@ -83,6 +83,57 @@ function HeatCell({ value }) {
   return <div className={`h-3 w-3 rounded-xs ${levels[Math.min(value, levels.length - 1)]}`} />;
 }
 
+function ProfileSkeleton() {
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(168,85,247,0.18),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(249,115,22,0.15),transparent_40%)]" />
+      <div className="pointer-events-none absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-violet-600/10 to-purple-500/5 rounded-3xl rotate-12 blur-2xl" />
+      <div className="pointer-events-none absolute top-40 right-20 w-80 h-80 bg-gradient-to-br from-orange-600/10 to-amber-500/5 rounded-3xl -rotate-12 blur-2xl" />
+      <div className="pointer-events-none absolute bottom-32 left-1/4 w-72 h-72 bg-gradient-to-br from-fuchsia-600/10 to-violet-500/5 rounded-3xl rotate-45 blur-2xl" />
+      <div className="pointer-events-none absolute bottom-20 right-1/3 w-60 h-60 bg-gradient-to-br from-orange-500/10 to-rose-500/5 rounded-3xl -rotate-45 blur-2xl" />
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(168,85,247,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(168,85,247,0.06)_1px,transparent_1px)] bg-size-[38px_38px] opacity-30" />
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 md:px-8 lg:px-10 space-y-6">
+        <section className={`rounded-2xl border border-violet-500/20 bg-slate-900/70 backdrop-blur-sm p-5 overflow-hidden`}>
+          <div className="h-32 rounded-xl bg-slate-800/40 animate-pulse" />
+          <div className="-mt-14 flex flex-col gap-5 px-2 pb-2 lg:flex-row lg:items-start lg:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row flex-1">
+              <div className="h-28 w-28 rounded-2xl bg-slate-800/40 animate-pulse" />
+              <div className="pt-2 flex-1 space-y-3">
+                <div className="h-8 w-48 rounded-lg bg-slate-800/40 animate-pulse" />
+                <div className="h-5 w-32 rounded-lg bg-slate-800/40 animate-pulse" />
+                <div className="h-4 w-96 rounded-lg bg-slate-800/40 animate-pulse" />
+                <div className="flex gap-4">
+                  <div className="h-4 w-40 rounded-lg bg-slate-800/40 animate-pulse" />
+                  <div className="h-4 w-40 rounded-lg bg-slate-800/40 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+          {[1, 2, 3, 4, 5, 6, 7].map((i) => (
+            <article key={i} className="rounded-2xl border border-violet-500/20 bg-slate-900/70 backdrop-blur-sm p-5">
+              <div className="h-4 w-24 rounded-lg bg-slate-800/40 animate-pulse mb-3" />
+              <div className="h-8 w-12 rounded-lg bg-slate-800/40 animate-pulse" />
+            </article>
+          ))}
+        </section>
+
+        <article className="rounded-2xl border border-violet-500/20 bg-slate-900/70 backdrop-blur-sm p-5">
+          <div className="h-5 w-32 rounded-lg bg-slate-800/40 animate-pulse mb-4" />
+          <div className="grid gap-1" style={{ gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
+            {Array.from({ length: 56 }).map((_, i) => (
+              <div key={i} className="w-4 h-4 rounded bg-slate-800/40 animate-pulse" />
+            ))}
+          </div>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 function RadarChart({ labels, values }) {
   const size = 320;
   const center = size / 2;
@@ -547,7 +598,11 @@ export default function Profile() {
   const goalPercent = Math.round((goalCurrent / goalTarget) * 100);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden">
+    <>
+      {loading ? (
+        <ProfileSkeleton />
+      ) : (
+        <div className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(168,85,247,0.18),transparent_40%),radial-gradient(circle_at_80%_20%,rgba(249,115,22,0.15),transparent_40%)]" />
       <div className="pointer-events-none absolute top-20 left-10 w-64 h-64 bg-gradient-to-br from-violet-600/10 to-purple-500/5 rounded-3xl rotate-12 blur-2xl" />
       <div className="pointer-events-none absolute top-40 right-20 w-80 h-80 bg-gradient-to-br from-orange-600/10 to-amber-500/5 rounded-3xl -rotate-12 blur-2xl" />
@@ -566,12 +621,6 @@ export default function Profile() {
           <div className={`rounded-xl border p-4 flex items-center gap-3 ${toast.type === "success" ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200" : "border-rose-500/40 bg-rose-500/10 text-rose-200"}`}>
             {toast.type === "success" ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
             <span>{toast.msg}</span>
-          </div>
-        )}
-
-        {loading && (
-          <div className="rounded-xl border border-violet-500/20 bg-slate-900/60 p-3 text-center text-sm text-slate-300">
-            Loading profile from backend...
           </div>
         )}
 
@@ -1055,5 +1104,7 @@ export default function Profile() {
         </div>
       </div>
     </div>
+      )}
+    </>
   );
 }
